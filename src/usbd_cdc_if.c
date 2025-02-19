@@ -252,11 +252,10 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t *pbuf, uint16_t length) {
  */
 static int8_t CDC_Receive_FS(uint8_t *Buf, uint32_t *Len) {
     /* USER CODE BEGIN 6 */
-    memcpy(UserTxBufferFS, Buf, *Len);
-    CDC_Transmit_FS(UserTxBufferFS, *Len);
+    (void)Len;
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
     USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
     return (USBD_OK);
     /* USER CODE END 6 */
 }
