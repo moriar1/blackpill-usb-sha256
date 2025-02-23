@@ -41,7 +41,7 @@ void _init(void) {}
 
 void _fini(void) {}
 
-void* __dso_handle = NULL;
+void *__dso_handle = NULL;
 
 /* Functions */
 void initialise_monitor_handles() {}
