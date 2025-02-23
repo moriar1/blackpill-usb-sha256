@@ -43,6 +43,7 @@ add_executable(main
     ${HAL_SRC_DIR}/stm32f4xx_hal_tim_ex.c
     ${HAL_SRC_DIR}/stm32f4xx_ll_usb.c
     ${SRC_DIR}/main.c
+    ${SRC_DIR}/shell.cpp
     ${SRC_DIR}/startup_stm32f411ceux.s
     ${SRC_DIR}/stm32f4xx_hal_msp.c
     ${SRC_DIR}/stm32f4xx_it.c
