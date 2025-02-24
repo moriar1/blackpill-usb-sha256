@@ -1,5 +1,5 @@
-#include <cstddef>
-#include <string>
+#include <algorithm>
+#include <array>
 #include <string_view>
 
 #include "shell.h"
@@ -7,24 +7,36 @@
 
 namespace shell {
 
-std::string current_input{};
+std::string_view receivedData{};
 
-void respond(const std::string_view response) {
-    std::string copy{response};
-    auto ptr = reinterpret_cast<unsigned char *>(copy.data());
-    CDC_Transmit_FS(ptr, response.size());
+void transmit(std::string_view data) {
+    static std::array<unsigned char, APP_TX_DATA_SIZE> buffer{};
+    if (data.size() > buffer.size()) {
+        return;
+    }
+    std::copy(data.cbegin(), data.cend(), buffer.begin());
+    while (CDC_Transmit_FS(buffer.data(), data.size()) == USBD_BUSY) {
+    }
 }
 
-void process_characters(const char *const data, const std::size_t size) {
-    if (current_input.size() + size > 500) {
-        current_input.clear();
-        respond("\r\nerror: input is larger than 500 symbols\r\n");
+void run() {
+    while (true) {
+        while (receivedData.empty()) {
+        }
+        if (receivedData[0] == '\r') {
+            transmit("hello\r\n");
+        }
+        receivedData = {};
     }
-    current_input.append(data, size);
 }
 
 } // namespace shell
 
-extern "C" void process_characters(const uint8_t *const data, const uint32_t size) {
-    shell::process_characters(reinterpret_cast<const char *>(data), size);
+extern "C" {
+
+void shell_run() { shell::run(); }
+
+void shell_receive_callback(unsigned char *const data, const uint32_t size) {
+    shell::receivedData = {reinterpret_cast<const char *>(data), size};
+}
 }

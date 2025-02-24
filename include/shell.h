@@ -6,7 +6,8 @@
 extern "C" {
 #endif
 
-void process_characters(const uint8_t *const data, const uint32_t size);
+void shell_run();
+void shell_receive_callback(unsigned char *const data, const uint32_t size);
 
 #ifdef __cplusplus
 }
