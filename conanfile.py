@@ -15,7 +15,14 @@ class BlackpillUsart(ConanFile):
             )
 
     def build_requirements(self):
-        self.tool_requires("cmake/[>=3.30]")
+        self.tool_requires("cmake/[>=3.30 <4.0]")
+
+    def requirements(self):
+        self.requires("wolfssl/[>=5.0 <6.0]")
+
+    def configure(self):
+        self.options["wolfssl"].with_filesystem = False
+        self.options["wolfssl"].with_fastmath = True
 
     def layout(self):
         cmake_layout(self)

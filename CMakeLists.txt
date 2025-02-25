@@ -3,6 +3,8 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(usb C CXX ASM)
 
+find_package(wolfssl REQUIRED)
+
 # paths and files
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
@@ -65,6 +67,7 @@ add_executable(main
     ${USBDEVLIB_SRC_DIR}/usbd_ioreq.c
 )
 set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
+target_link_libraries(main PRIVATE startup wolfssl::wolfssl)
 target_include_directories(main PRIVATE
     ${INC_DIR}
     ${CMSIS_INCLUDE_DIRECTORIES}
