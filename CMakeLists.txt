@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-project(usb C CXX ASM)
+project(usb-sha256 C CXX ASM)
 
 find_package(wolfssl REQUIRED)
 
