@@ -18,6 +18,9 @@ using static_buffer::SpanType;
 RxBuffer receive_buffer{};
 
 void transmit(SpanType data) {
+    if (data.size() > APP_TX_DATA_SIZE) {
+        return;
+    }
     auto ptr = const_cast<unsigned char *>(data.data());
     while (CDC_Transmit_FS(ptr, data.size()) == USBD_BUSY) {
     }
