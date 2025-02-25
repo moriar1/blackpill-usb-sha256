@@ -3,10 +3,7 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(usb C CXX ASM)
 
-set(CMAKE_ASM_FLAGS_DEBUG "")
-set(CMAKE_ASM_FLAGS_RELEASE "")
-set(CMAKE_ASM_FLAGS_MINSIZEREL "")
-set(CMAKE_ASM_FLAGS_RELWITHDEBINFO "")
+# paths and files
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 set(INC_DIR ${PROJECT_SOURCE_DIR}/include)
@@ -31,6 +28,16 @@ set(USBDEVLIB_CDC_SRC_DIR ${USBDEVLIB_DIR}/Class/CDC/Src)
 
 set(LINKER_SCRIPT ${PROJECT_SOURCE_DIR}/linker/STM32F411CEUX_FLASH.ld)
 
+# startup library
+
+set(CMAKE_ASM_FLAGS_DEBUG "")
+set(CMAKE_ASM_FLAGS_RELEASE "")
+set(CMAKE_ASM_FLAGS_MINSIZEREL "")
+set(CMAKE_ASM_FLAGS_RELWITHDEBINFO "")
+add_library(startup STATIC ${SRC_DIR}/startup_stm32f411ceux.s)
+
+# main ELF file
+
 add_executable(main
     ${CMSIS_TEMPLATES_DIR}/system_stm32f4xx.c
     ${HAL_SRC_DIR}/stm32f4xx_hal.c
@@ -44,7 +51,6 @@ add_executable(main
     ${HAL_SRC_DIR}/stm32f4xx_ll_usb.c
     ${SRC_DIR}/main.c
     ${SRC_DIR}/shell.cpp
-    ${SRC_DIR}/startup_stm32f411ceux.s
     ${SRC_DIR}/stm32f4xx_hal_msp.c
     ${SRC_DIR}/stm32f4xx_it.c
     ${SRC_DIR}/syscalls.c
@@ -71,20 +77,20 @@ target_link_options(main PRIVATE
     -Wl,--gc-sections
     -nostartfiles
 )
-target_compile_definitions(main PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX,C>:STM32F411xE>
-)
+target_compile_definitions(main PRIVATE STM32F411xE)
 target_compile_options(main PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX,C>:-O0>
-    $<$<COMPILE_LANGUAGE:CXX,C>:-g>
-    $<$<COMPILE_LANGUAGE:CXX,C>:-Wall>
-    $<$<COMPILE_LANGUAGE:CXX,C>:-Wextra>
-    $<$<COMPILE_LANGUAGE:CXX,C>:-Wpedantic>
-    $<$<COMPILE_LANGUAGE:CXX,C>:-Werror>
+    -O0
+    -g
+    -Wall
+    -Wextra
+    -Wpedantic
+    -Werror
     $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
-    $<$<COMPILE_LANGUAGE:CXX,C>:-ffunction-sections>
-    $<$<COMPILE_LANGUAGE:CXX,C>:-fdata-sections>
+    -ffunction-sections
+    -fdata-sections
 )
+
+# strip ELF file
 
 find_program(CMAKE_STRIP arm-none-eabi-strip REQUIRED)
 add_custom_command(
@@ -94,6 +100,8 @@ add_custom_command(
 )
 add_custom_target(stripped DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/stripped.elf)
 
+# make firmware file
+
 find_program(CMAKE_OBJCOPY arm-none-eabi-objcopy REQUIRED)
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/main.bin
@@ -101,6 +109,8 @@ add_custom_command(
     COMMAND ${CMAKE_OBJCOPY} -O binary stripped.elf main.bin
 )
 add_custom_target(main_bin ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/main.bin)
+
+# flash device
 
 find_program(CMAKE_ST_FLASH st-flash REQUIRED)
 add_custom_target(
