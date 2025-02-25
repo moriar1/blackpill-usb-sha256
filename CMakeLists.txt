@@ -115,9 +115,15 @@ add_custom_target(main_bin ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/main.bin)
 
 # flash device
 
-find_program(CMAKE_ST_FLASH st-flash REQUIRED)
-add_custom_target(
-    flash
-    COMMAND ${CMAKE_ST_FLASH} --connect-under-reset write main.bin 0x08000000
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/main.bin
-)
+message(CHECK_START "Check whether st-flash is installed")
+find_program(CMAKE_ST_FLASH st-flash)
+if (CMAKE_ST_FLASH-NOTFOUND)
+    message(CHECK_FAIL "not found")
+else()
+    message(CHECK_PASS "found")
+    add_custom_target(
+        flash
+        COMMAND ${CMAKE_ST_FLASH} --connect-under-reset write main.bin 0x08000000
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/main.bin
+    )
+endif()
