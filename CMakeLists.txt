@@ -10,6 +10,7 @@ find_package(wolfssl REQUIRED)
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 set(INC_DIR ${PROJECT_SOURCE_DIR}/include)
 set(BOARD_SRC_DIR ${PROJECT_SOURCE_DIR}/board)
+set(BOARD_INC_DIR ${PROJECT_SOURCE_DIR}/board/include)
 
 include(${PROJECT_SOURCE_DIR}/cmake/stm32cubef4.cmake)
 
@@ -52,6 +53,7 @@ set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
 target_link_libraries(main PRIVATE startup wolfssl::wolfssl)
 target_include_directories(main PRIVATE
     ${INC_DIR}
+    ${BOARD_INC_DIR}
     ${CMSIS_INCLUDE_DIRECTORIES}
     ${HAL_INCLUDE_DIRECTORIES}
     ${USBDEVLIB_INCLUDE_DIRECTORIES}
