@@ -9,6 +9,7 @@ find_package(wolfssl REQUIRED)
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 set(INC_DIR ${PROJECT_SOURCE_DIR}/include)
+set(BOARD_SRC_DIR ${PROJECT_SOURCE_DIR}/board)
 
 include(${PROJECT_SOURCE_DIR}/cmake/stm32cubef4.cmake)
 
@@ -31,17 +32,17 @@ add_executable(main
     ${HAL_SRC_DIR}/stm32f4xx_hal_tim.c
     ${HAL_SRC_DIR}/stm32f4xx_hal_tim_ex.c
     ${HAL_SRC_DIR}/stm32f4xx_ll_usb.c
-    ${SRC_DIR}/main.c
+    ${BOARD_SRC_DIR}/main.c
     ${SRC_DIR}/sha256sum.cpp
     ${SRC_DIR}/shell.cpp
-    ${SRC_DIR}/stm32f4xx_hal_msp.c
-    ${SRC_DIR}/stm32f4xx_it.c
-    ${SRC_DIR}/syscalls.c
-    ${SRC_DIR}/sysmem.c
-    ${SRC_DIR}/usbd_cdc_if.c
-    ${SRC_DIR}/usbd_conf.c
-    ${SRC_DIR}/usbd_desc.c
-    ${SRC_DIR}/usb_device.c
+    ${BOARD_SRC_DIR}/stm32f4xx_hal_msp.c
+    ${BOARD_SRC_DIR}/stm32f4xx_it.c
+    ${BOARD_SRC_DIR}/syscalls.c
+    ${BOARD_SRC_DIR}/sysmem.c
+    ${BOARD_SRC_DIR}/usbd_cdc_if.c
+    ${BOARD_SRC_DIR}/usbd_conf.c
+    ${BOARD_SRC_DIR}/usbd_desc.c
+    ${BOARD_SRC_DIR}/usb_device.c
     ${USBDEVLIB_CDC_SRC_DIR}/usbd_cdc.c
     ${USBDEVLIB_SRC_DIR}/usbd_core.c
     ${USBDEVLIB_SRC_DIR}/usbd_ctlreq.c
