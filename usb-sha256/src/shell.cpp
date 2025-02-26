@@ -12,6 +12,7 @@
 #include "sha256sum.hpp"
 #include "shell.hpp"
 #include "static_buffer.hpp"
+#include "types.hpp"
 #include "usbd_cdc_if.h"
 
 namespace usbsha256 {
@@ -22,18 +23,18 @@ using TxBuffer = Buffer<APP_TX_DATA_SIZE>;
 RxBuffer receive_buffer{};
 std::atomic<bool> receive_buffer_guard{};
 
-void transmit(SpanType data) {
+void transmit(BytesSpan data) {
     if (data.size() > APP_TX_DATA_SIZE) {
         return;
     }
-    auto ptr = const_cast<unsigned char *>(data.data());
+    auto ptr = const_cast<Byte *>(data.data());
     while (CDC_Transmit_FS(ptr, data.size()) == USBD_BUSY) {
     }
 }
 
 void transmit(std::string_view text) {
-    auto ptr = reinterpret_cast<const ElementType *>(text.data());
-    SpanType data{ptr, text.size()};
+    auto ptr = reinterpret_cast<const Byte *>(text.data());
+    BytesSpan data{ptr, text.size()};
     transmit(data);
 }
 
@@ -43,10 +44,10 @@ void run() {
     while (true) {
         while (!receive_buffer_guard && !receive_buffer.Empty()) {
         }
-        const auto lastElementIndex = receive_buffer.DataSize() - 1;
-        const auto lastElement = receive_buffer.Data()[lastElementIndex];
-        if (lastElement == '\r') {
-            const auto data = receive_buffer.Data().first(lastElementIndex);
+        const auto lastByteIndex = receive_buffer.DataSize() - 1;
+        const auto lastByte = receive_buffer.Data()[lastByteIndex];
+        if (lastByte == '\r') {
+            const auto data = receive_buffer.Data().first(lastByteIndex);
             const auto hash = sha256.Hash(data);
             const HexString<WC_SHA256_DIGEST_SIZE> hex{hash};
             transmit(hex.String());
