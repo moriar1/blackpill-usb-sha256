@@ -9,8 +9,9 @@ find_package(wolfssl REQUIRED)
 
 set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
 set(INC_DIR ${PROJECT_SOURCE_DIR}/include)
-set(BOARD_SRC_DIR ${PROJECT_SOURCE_DIR}/board)
-set(BOARD_INC_DIR ${PROJECT_SOURCE_DIR}/board/include)
+set(BOARD_DIR ${PROJECT_SOURCE_DIR}/board)
+set(BOARD_SRC_DIR ${BOARD_DIR}/src)
+set(BOARD_INC_DIR ${BOARD_DIR}/include)
 
 include(${PROJECT_SOURCE_DIR}/cmake/stm32cubef4.cmake)
 
