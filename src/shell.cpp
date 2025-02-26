@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <ranges>
 #include <span>
@@ -16,6 +17,7 @@ using TxBuffer = static_buffer::Buffer<APP_TX_DATA_SIZE>;
 using static_buffer::SpanType;
 
 RxBuffer receive_buffer{};
+std::atomic<bool> receive_buffer_guard{};
 
 void transmit(SpanType data) {
     if (data.size() > APP_TX_DATA_SIZE) {
@@ -34,13 +36,13 @@ void transmit(std::string_view text) {
 
 void run() {
     while (true) {
-        while (receive_buffer.Empty()) {
+        while (!receive_buffer_guard) {
         }
         auto span = receive_buffer.Data();
         if (span[0] == '\r') {
             transmit("hello\r\n");
         }
-        receive_buffer.Clear();
+        receive_buffer_guard = false;
     }
 }
 
@@ -51,6 +53,11 @@ extern "C" {
 void shell_run() { shell::run(); }
 
 void shell_receive_callback(unsigned char *const data, const uint32_t size) {
-    shell::receive_buffer.Assign({data, size});
+    using namespace shell;
+    if (receive_buffer_guard) {
+        return;
+    }
+    receive_buffer.Assign({data, size});
+    receive_buffer_guard = true;
 }
 }
