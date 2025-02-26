@@ -32,11 +32,7 @@ set(LINKER_SCRIPT ${PROJECT_SOURCE_DIR}/linker/STM32F411CEUX_FLASH.ld)
 
 # startup library
 
-set(CMAKE_ASM_FLAGS_DEBUG "")
-set(CMAKE_ASM_FLAGS_RELEASE "")
-set(CMAKE_ASM_FLAGS_MINSIZEREL "")
-set(CMAKE_ASM_FLAGS_RELWITHDEBINFO "")
-add_library(startup STATIC ${SRC_DIR}/startup_stm32f411ceux.s)
+add_subdirectory(${PROJECT_SOURCE_DIR}/startup)
 
 # main ELF file
 
