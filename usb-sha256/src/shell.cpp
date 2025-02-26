@@ -9,6 +9,7 @@
 
 #include <wolfssl/wolfcrypt/sha256.h>
 
+#include "hex_string.hpp"
 #include "sha256sum.hpp"
 #include "shell.hpp"
 #include "static_buffer.hpp"
