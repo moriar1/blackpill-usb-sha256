@@ -24,7 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include <wolfssl/ssl.h>
 
-#include "shell.h"
+#include "shell.hpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
