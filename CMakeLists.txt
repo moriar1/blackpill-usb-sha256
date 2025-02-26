@@ -7,15 +7,17 @@ find_package(wolfssl REQUIRED)
 
 # paths and files
 
-set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
-set(INC_DIR ${PROJECT_SOURCE_DIR}/include)
 set(BOARD_DIR ${PROJECT_SOURCE_DIR}/board)
 set(BOARD_SRC_DIR ${BOARD_DIR}/src)
 set(BOARD_INC_DIR ${BOARD_DIR}/include)
 
-include(${PROJECT_SOURCE_DIR}/cmake/stm32cubef4.cmake)
+set(USBSHA256_DIR ${PROJECT_SOURCE_DIR}/usb-sha256)
+set(USBSHA256_SRC_DIR ${USBSHA256_DIR}/src)
+set(USBSHA256_INC_DIR ${USBSHA256_DIR}/include)
 
 set(LINKER_SCRIPT ${PROJECT_SOURCE_DIR}/linker/STM32F411CEUX_FLASH.ld)
+
+include(${PROJECT_SOURCE_DIR}/cmake/stm32cubef4.cmake)
 
 # startup library
 
@@ -35,8 +37,8 @@ add_executable(main
     ${HAL_SRC_DIR}/stm32f4xx_hal_tim_ex.c
     ${HAL_SRC_DIR}/stm32f4xx_ll_usb.c
     ${BOARD_SRC_DIR}/main.c
-    ${SRC_DIR}/sha256sum.cpp
-    ${SRC_DIR}/shell.cpp
+    ${USBSHA256_SRC_DIR}/sha256sum.cpp
+    ${USBSHA256_SRC_DIR}/shell.cpp
     ${BOARD_SRC_DIR}/stm32f4xx_hal_msp.c
     ${BOARD_SRC_DIR}/stm32f4xx_it.c
     ${BOARD_SRC_DIR}/syscalls.c
@@ -53,8 +55,8 @@ add_executable(main
 set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
 target_link_libraries(main PRIVATE startup wolfssl::wolfssl)
 target_include_directories(main PRIVATE
-    ${INC_DIR}
     ${BOARD_INC_DIR}
+    ${USBSHA256_INC_DIR}
     ${CMSIS_INCLUDE_DIRECTORIES}
     ${HAL_INCLUDE_DIRECTORIES}
     ${USBDEVLIB_INCLUDE_DIRECTORIES}
