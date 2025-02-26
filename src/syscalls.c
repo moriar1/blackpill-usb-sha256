@@ -155,8 +155,7 @@ int _execve(char *name, char **argv, char **env) {
     return -1;
 }
 
-int _gettimeofday( struct timeval *tv, void *tzvp )
-{
+int _gettimeofday(struct timeval *tv, void *tzvp) {
     (void)tv;
     (void)tzvp;
     return 0;
