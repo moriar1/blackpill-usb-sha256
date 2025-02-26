@@ -24,9 +24,9 @@ public:
     Sha256Sum& operator=(Sha256Sum&&) = default;
     ~Sha256Sum() = default;
 
-    HashType Hash(SpanType data) const;
+    HashType Hash(SpanType data);
 private:
-    wc_Sha256 sha256 = {};
+    wc_Sha256 _sha256 = {};
     std::array<ElementType, WC_SHA256_DIGEST_SIZE> _hash;
 };
 
@@ -61,4 +61,4 @@ HexString<TSize>::StringType HexString<TSize>::String() const {
     return _string;
 }
 
-}
+} // namespace crypt

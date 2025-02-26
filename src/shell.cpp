@@ -40,8 +40,7 @@ void transmit(std::string_view text) {
 }
 
 void run() {
-    wc_Sha256 sha256{};
-    wc_InitSha256(&sha256);
+    crypt::Sha256Sum sha256{};
 
     while (true) {
         while (!receive_buffer_guard && !receive_buffer.Empty()) {
@@ -50,10 +49,8 @@ void run() {
         const auto lastElement = receive_buffer.Data()[lastElementIndex];
         if (lastElement == '\r') {
             const auto data = receive_buffer.Data().first(lastElementIndex);
-            wc_Sha256Update(&sha256, data.data(), data.size());
-            ElementType hash[WC_SHA256_DIGEST_SIZE] = {0};
-            wc_Sha256Final(&sha256, hash);
-            const crypt::HexString<WC_SHA256_DIGEST_SIZE> hex(hash);
+            const auto hash = sha256.Hash(data);
+            const crypt::HexString<WC_SHA256_DIGEST_SIZE> hex{hash};
             transmit(hex.String());
             transmit("\r\n");
             receive_buffer.Clear();
