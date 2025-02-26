@@ -14,12 +14,10 @@
 #include "static_buffer.hpp"
 #include "usbd_cdc_if.h"
 
-namespace shell {
+namespace usbsha256 {
 
-using RxBuffer = static_buffer::Buffer<APP_RX_DATA_SIZE>;
-using TxBuffer = static_buffer::Buffer<APP_TX_DATA_SIZE>;
-using static_buffer::ElementType;
-using static_buffer::SpanType;
+using RxBuffer = Buffer<APP_RX_DATA_SIZE>;
+using TxBuffer = Buffer<APP_TX_DATA_SIZE>;
 
 RxBuffer receive_buffer{};
 std::atomic<bool> receive_buffer_guard{};
@@ -40,7 +38,7 @@ void transmit(std::string_view text) {
 }
 
 void run() {
-    crypt::Sha256Sum sha256{};
+    Sha256Sum sha256{};
 
     while (true) {
         while (!receive_buffer_guard && !receive_buffer.Empty()) {
@@ -50,7 +48,7 @@ void run() {
         if (lastElement == '\r') {
             const auto data = receive_buffer.Data().first(lastElementIndex);
             const auto hash = sha256.Hash(data);
-            const crypt::HexString<WC_SHA256_DIGEST_SIZE> hex{hash};
+            const HexString<WC_SHA256_DIGEST_SIZE> hex{hash};
             transmit(hex.String());
             transmit("\r\n");
             receive_buffer.Clear();
@@ -59,14 +57,14 @@ void run() {
     }
 }
 
-} // namespace shell
+} // namespace usbsha256
 
 extern "C" {
 
-void shell_run() { shell::run(); }
+void shell_run() { usbsha256::run(); }
 
 void shell_receive_callback(unsigned char *const data, const uint32_t size) {
-    using namespace shell;
+    using namespace usbsha256;
     if (receive_buffer_guard) {
         return;
     }

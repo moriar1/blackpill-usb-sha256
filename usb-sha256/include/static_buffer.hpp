@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <span>
 
-namespace static_buffer {
+namespace usbsha256 {
 
 using ElementType = std::uint8_t;
 using SpanType = std::span<const ElementType>;
@@ -76,4 +76,4 @@ template <std::size_t TMaxSize> bool Buffer<TMaxSize>::Write(SpanType span, cons
     return true;
 }
 
-} // namespace static_buffer
+} // namespace usbsha256

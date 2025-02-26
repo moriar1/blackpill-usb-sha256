@@ -8,10 +8,7 @@
 
 #include "static_buffer.hpp"
 
-namespace crypt {
-
-using ElementType = static_buffer::ElementType;
-using SpanType = static_buffer::SpanType;
+namespace usbsha256 {
 
 class Sha256Sum {
 public:
@@ -60,4 +57,4 @@ template <std::size_t TSize> HexString<TSize>::StringType HexString<TSize>::Stri
     return _string;
 }
 
-} // namespace crypt
+} // namespace usbsha256

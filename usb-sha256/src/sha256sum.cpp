@@ -2,7 +2,7 @@
 
 #include "sha256sum.hpp"
 
-namespace crypt {
+namespace usbsha256 {
 
 Sha256Sum::Sha256Sum() { wc_InitSha256(&_sha256); }
 
@@ -12,4 +12,4 @@ Sha256Sum::HashType Sha256Sum::Hash(SpanType data) {
     return _hash;
 }
 
-} // namespace crypt
+} // namespace usbsha256
