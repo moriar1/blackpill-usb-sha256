@@ -9,6 +9,7 @@
 
 #include <wolfssl/wolfcrypt/sha256.h>
 
+#include "sha256sum.hpp"
 #include "shell.h"
 #include "static_buffer.hpp"
 #include "usbd_cdc_if.h"
@@ -52,13 +53,10 @@ void run() {
             wc_Sha256Update(&sha256, data.data(), data.size());
             ElementType hash[WC_SHA256_DIGEST_SIZE] = {0};
             wc_Sha256Final(&sha256, hash);
-            ElementType hashString[WC_SHA256_DIGEST_SIZE * 2] = {0};
-            for (std::size_t i{}; i < WC_SHA256_DIGEST_SIZE; ++i) {
-                auto ptr = reinterpret_cast<char *>(hashString + i * 2);
-                std::sprintf(ptr, "%02x", hash[i]);
-            }
-            transmit(hashString);
+            const crypt::HexString<WC_SHA256_DIGEST_SIZE> hex(hash);
+            transmit(hex.String());
             transmit("\r\n");
+            receive_buffer.Clear();
         }
         receive_buffer_guard = false;
     }
