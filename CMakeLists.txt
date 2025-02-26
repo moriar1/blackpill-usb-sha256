@@ -79,8 +79,6 @@ target_link_options(main PRIVATE
 )
 target_compile_definitions(main PRIVATE STM32F411xE)
 target_compile_options(main PRIVATE
-    -O0
-    -g
     -Wall
     -Wextra
     -Wpedantic
