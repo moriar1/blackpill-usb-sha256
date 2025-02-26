@@ -2,9 +2,12 @@
 #include <array>
 #include <atomic>
 #include <cstddef>
+#include <cstdio>
 #include <ranges>
 #include <span>
 #include <string_view>
+
+#include <wolfssl/wolfcrypt/sha256.h>
 
 #include "shell.h"
 #include "static_buffer.hpp"
@@ -14,6 +17,7 @@ namespace shell {
 
 using RxBuffer = static_buffer::Buffer<APP_RX_DATA_SIZE>;
 using TxBuffer = static_buffer::Buffer<APP_TX_DATA_SIZE>;
+using static_buffer::ElementType;
 using static_buffer::SpanType;
 
 RxBuffer receive_buffer{};
@@ -29,18 +33,32 @@ void transmit(SpanType data) {
 }
 
 void transmit(std::string_view text) {
-    auto ptr = reinterpret_cast<const static_buffer::ElementType *>(text.data());
+    auto ptr = reinterpret_cast<const ElementType *>(text.data());
     SpanType data{ptr, text.size()};
     transmit(data);
 }
 
 void run() {
+    wc_Sha256 sha256{};
+    wc_InitSha256(&sha256);
+
     while (true) {
-        while (!receive_buffer_guard) {
+        while (!receive_buffer_guard && !receive_buffer.Empty()) {
         }
-        auto span = receive_buffer.Data();
-        if (span[0] == '\r') {
-            transmit("hello\r\n");
+        const auto lastElementIndex = receive_buffer.DataSize() - 1;
+        const auto lastElement = receive_buffer.Data()[lastElementIndex];
+        if (lastElement == '\r') {
+            const auto data = receive_buffer.Data().first(lastElementIndex);
+            wc_Sha256Update(&sha256, data.data(), data.size());
+            ElementType hash[WC_SHA256_DIGEST_SIZE] = {0};
+            wc_Sha256Final(&sha256, hash);
+            ElementType hashString[WC_SHA256_DIGEST_SIZE * 2] = {0};
+            for (std::size_t i{}; i < WC_SHA256_DIGEST_SIZE; ++i) {
+                auto ptr = reinterpret_cast<char *>(hashString + i * 2);
+                std::sprintf(ptr, "%02x", hash[i]);
+            }
+            transmit(hashString);
+            transmit("\r\n");
         }
         receive_buffer_guard = false;
     }
@@ -57,7 +75,7 @@ void shell_receive_callback(unsigned char *const data, const uint32_t size) {
     if (receive_buffer_guard) {
         return;
     }
-    receive_buffer.Assign({data, size});
+    receive_buffer.Append({data, size});
     receive_buffer_guard = true;
 }
 }
