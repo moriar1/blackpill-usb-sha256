@@ -3,48 +3,95 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(usb-sha256 C CXX ASM)
 
-# paths
+find_package(wolfssl REQUIRED)
 
-set(BOARD_INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/board/include)
-set(USBSHA256_INCLUDE_DIRECTORY ${PROJECT_SOURCE_DIR}/usb-sha256/include)
-include(${PROJECT_SOURCE_DIR}/cmake/stm32cubef4.cmake)
+# paths and files
 
-# libraries
+set(SRC_DIR ${PROJECT_SOURCE_DIR}/src)
+set(INC_DIR ${PROJECT_SOURCE_DIR}/include)
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/startup)
-add_subdirectory(${PROJECT_SOURCE_DIR}/board)
-add_subdirectory(${PROJECT_SOURCE_DIR}/usb-sha256)
+set(STM43CUBEF4_DIR ${PROJECT_SOURCE_DIR}/../STM32CubeF4)
+set(CMSIS_DIR ${STM43CUBEF4_DIR}/Drivers/CMSIS)
+set(CMSIS_INCLUDE_DIRECTORIES
+    ${CMSIS_DIR}/Include
+    ${CMSIS_DIR}/Device/ST/STM32F4xx/Include
+)
+set(CMSIS_TEMPLATES_DIR ${CMSIS_DIR}/Device/ST/STM32F4xx/Source/Templates)
+set(HAL_DIR ${STM43CUBEF4_DIR}/Drivers/STM32F4xx_HAL_Driver)
+set(HAL_INCLUDE_DIRECTORIES ${HAL_DIR}/Inc)
+set(HAL_SRC_DIR ${HAL_DIR}/Src)
+set(USBDEVLIB_DIR ${STM43CUBEF4_DIR}/Middlewares/ST/STM32_USB_Device_Library)
+set(USBDEVLIB_INCLUDE_DIRECTORIES
+    ${USBDEVLIB_DIR}/Core/Inc
+    ${USBDEVLIB_DIR}/Class/CDC/Inc
+)
+set(USBDEVLIB_SRC_DIR ${USBDEVLIB_DIR}/Core/Src)
+set(USBDEVLIB_CDC_SRC_DIR ${USBDEVLIB_DIR}/Class/CDC/Src)
+
+set(LINKER_SCRIPT ${PROJECT_SOURCE_DIR}/linker/STM32F411CEUX_FLASH.ld)
+
+# startup library
+
+set(CMAKE_ASM_FLAGS_DEBUG "")
+set(CMAKE_ASM_FLAGS_RELEASE "")
+set(CMAKE_ASM_FLAGS_MINSIZEREL "")
+set(CMAKE_ASM_FLAGS_RELWITHDEBINFO "")
+add_library(startup STATIC ${SRC_DIR}/startup_stm32f411ceux.s)
 
 # main ELF file
 
 add_executable(main
-    ${PROJECT_SOURCE_DIR}/main.c
-    ${PROJECT_SOURCE_DIR}/syscalls.c
-    ${PROJECT_SOURCE_DIR}/sysmem.c
+    ${CMSIS_TEMPLATES_DIR}/system_stm32f4xx.c
+    ${HAL_SRC_DIR}/stm32f4xx_hal.c
+    ${HAL_SRC_DIR}/stm32f4xx_hal_cortex.c
+    ${HAL_SRC_DIR}/stm32f4xx_hal_gpio.c
+    ${HAL_SRC_DIR}/stm32f4xx_hal_pcd.c
+    ${HAL_SRC_DIR}/stm32f4xx_hal_pcd_ex.c
+    ${HAL_SRC_DIR}/stm32f4xx_hal_rcc.c
+    ${HAL_SRC_DIR}/stm32f4xx_hal_tim.c
+    ${HAL_SRC_DIR}/stm32f4xx_hal_tim_ex.c
+    ${HAL_SRC_DIR}/stm32f4xx_ll_usb.c
+    ${SRC_DIR}/main.c
+    ${SRC_DIR}/sha256sum.cpp
+    ${SRC_DIR}/shell.cpp
+    ${SRC_DIR}/stm32f4xx_hal_msp.c
+    ${SRC_DIR}/stm32f4xx_it.c
+    ${SRC_DIR}/syscalls.c
+    ${SRC_DIR}/sysmem.c
+    ${SRC_DIR}/usbd_cdc_if.c
+    ${SRC_DIR}/usbd_conf.c
+    ${SRC_DIR}/usbd_desc.c
+    ${SRC_DIR}/usb_device.c
+    ${USBDEVLIB_CDC_SRC_DIR}/usbd_cdc.c
+    ${USBDEVLIB_SRC_DIR}/usbd_core.c
+    ${USBDEVLIB_SRC_DIR}/usbd_ctlreq.c
+    ${USBDEVLIB_SRC_DIR}/usbd_ioreq.c
 )
-target_compile_definitions(main PRIVATE STM32F411xE)
+set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
+target_link_libraries(main PRIVATE startup wolfssl::wolfssl)
 target_include_directories(main PRIVATE
-    ${BOARD_INCLUDE_DIRECTORY}
-    ${USBSHA256_INCLUDE_DIRECTORY}
+    ${INC_DIR}
     ${CMSIS_INCLUDE_DIRECTORIES}
     ${HAL_INCLUDE_DIRECTORIES}
     ${USBDEVLIB_INCLUDE_DIRECTORIES}
 )
+target_link_options(main PRIVATE
+    -Wl,-T ${LINKER_SCRIPT}
+    -Wl,--fatal-warnings
+    -Wl,--gc-sections
+    -nostartfiles
+)
+target_compile_definitions(main PRIVATE STM32F411xE)
 target_compile_options(main PRIVATE
+    -O0
+    -g
     -Wall
     -Wextra
     -Wpedantic
     -Werror
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
     -ffunction-sections
     -fdata-sections
-)
-set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
-target_link_libraries(main PRIVATE startup board usb-sha256)
-target_link_options(main PRIVATE
-    -Wl,-T ${PROJECT_SOURCE_DIR}/linker/STM32F411CEUX_FLASH.ld
-    -Wl,--fatal-warnings
-    -Wl,--gc-sections
-    -nostartfiles
 )
 
 # strip ELF file

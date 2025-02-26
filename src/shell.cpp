@@ -10,7 +10,7 @@
 #include <wolfssl/wolfcrypt/sha256.h>
 
 #include "sha256sum.hpp"
-#include "shell.hpp"
+#include "shell.h"
 #include "static_buffer.hpp"
 #include "usbd_cdc_if.h"
 
