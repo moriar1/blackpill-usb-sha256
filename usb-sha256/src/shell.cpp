@@ -12,14 +12,14 @@
 #include "hex_string.hpp"
 #include "sha256sum.hpp"
 #include "shell.hpp"
-#include "static_buffer.hpp"
+#include "fast_buffer.hpp"
 #include "types.hpp"
 #include "usbd_cdc_if.h"
 
 namespace usbsha256 {
 
-using RxBuffer = Buffer<APP_RX_DATA_SIZE>;
-using TxBuffer = Buffer<APP_TX_DATA_SIZE>;
+using RxBuffer = FastBuffer<APP_RX_DATA_SIZE>;
+using TxBuffer = FastBuffer<APP_TX_DATA_SIZE>;
 
 RxBuffer receive_buffer{};
 std::atomic<bool> receive_buffer_guard{};
