@@ -19,7 +19,6 @@
 namespace usbsha256 {
 
 using RxBuffer = FastBuffer<APP_RX_DATA_SIZE>;
-using TxBuffer = FastBuffer<APP_TX_DATA_SIZE>;
 
 RxBuffer receive_buffer{};
 std::atomic<bool> receive_buffer_guard{};
@@ -40,8 +39,6 @@ void transmit(std::string_view text) {
 }
 
 void run() {
-    Sha256Sum sha256{};
-
     while (true) {
         while (!receive_buffer_guard && !receive_buffer.Empty()) {
         }
@@ -49,8 +46,11 @@ void run() {
         const auto lastByte = receive_buffer.Data()[lastByteIndex];
         if (lastByte == '\r') {
             const auto data = receive_buffer.Data().first(lastByteIndex);
+
+            Sha256Sum sha256{};
             const auto hash = sha256.Hash(data);
             const HexString<WC_SHA256_DIGEST_SIZE> hex{hash};
+
             transmit(hex.String());
             transmit("\r\n");
             receive_buffer.Clear();
