@@ -22,9 +22,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <wolfssl/ssl.h>
-
-#include "shell.hpp"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,12 +90,10 @@ void board_main(void) {
     MX_USB_DEVICE_Init();
     MX_TIM2_Init();
     /* USER CODE BEGIN 2 */
-    wolfSSL_Init();
     /* USER CODE END 2 */
 
     /* Infinite loop */
     /* USER CODE BEGIN WHILE */
-    shell_run();
     /* USER CODE END 3 */
 }
 

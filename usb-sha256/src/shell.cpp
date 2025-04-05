@@ -9,6 +9,8 @@
 
 #include <wolfssl/wolfcrypt/sha256.h>
 
+#include "board/usbd_cdc_if.h"
+
 #include "hex_string.hpp"
 #include "sha256sum.hpp"
 #include "shell.hpp"
@@ -39,6 +41,7 @@ void transmit(std::string_view text) {
 }
 
 void run() {
+    set_usb_receive_callback(shell_receive_callback);
     while (true) {
         while (!receive_buffer_guard && !receive_buffer.Empty()) {
         }

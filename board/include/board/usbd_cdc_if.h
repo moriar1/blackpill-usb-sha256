@@ -64,7 +64,7 @@ extern "C" {
  */
 
 /* USER CODE BEGIN EXPORTED_TYPES */
-
+typedef void (*usb_receive_callback_t)(uint8_t* const, const uint32_t);
 /* USER CODE END EXPORTED_TYPES */
 
 /**
@@ -108,7 +108,7 @@ extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
-
+void set_usb_receive_callback(usb_receive_callback_t callback);
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**

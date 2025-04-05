@@ -3,84 +3,40 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 project(usb-sha256 C CXX ASM)
 
-find_package(wolfssl REQUIRED)
-
-# paths and files
-
-set(BOARD_DIR ${PROJECT_SOURCE_DIR}/board)
-set(BOARD_SRC_DIR ${BOARD_DIR}/src)
-set(BOARD_INC_DIR ${BOARD_DIR}/include)
-
-set(USBSHA256_DIR ${PROJECT_SOURCE_DIR}/usb-sha256)
-set(USBSHA256_SRC_DIR ${USBSHA256_DIR}/src)
-set(USBSHA256_INC_DIR ${USBSHA256_DIR}/include)
-
-set(LINKER_SCRIPT ${PROJECT_SOURCE_DIR}/STM32F411CEUX_FLASH.ld)
-
-include(${PROJECT_SOURCE_DIR}/cmake/stm32cubef4.cmake)
-
-# startup library
-
-add_subdirectory(${PROJECT_SOURCE_DIR}/startup)
+# libraries
+add_subdirectory(${PROJECT_SOURCE_DIR}/board)
+add_subdirectory(${PROJECT_SOURCE_DIR}/os)
+add_subdirectory(${PROJECT_SOURCE_DIR}/usb-sha256)
 
 # main ELF file
-
-add_executable(main
-    ${BOARD_SRC_DIR}/main.c
-    ${BOARD_SRC_DIR}/stm32f4xx_hal_msp.c
-    ${BOARD_SRC_DIR}/stm32f4xx_it.c
-    ${BOARD_SRC_DIR}/syscalls.c
-    ${BOARD_SRC_DIR}/sysmem.c
-    ${BOARD_SRC_DIR}/usb_device.c
-    ${BOARD_SRC_DIR}/usbd_cdc_if.c
-    ${BOARD_SRC_DIR}/usbd_conf.c
-    ${BOARD_SRC_DIR}/usbd_desc.c
-    ${CMSIS_TEMPLATES_DIR}/system_stm32f4xx.c
-    ${HAL_SRC_DIR}/stm32f4xx_hal.c
-    ${HAL_SRC_DIR}/stm32f4xx_hal_cortex.c
-    ${HAL_SRC_DIR}/stm32f4xx_hal_gpio.c
-    ${HAL_SRC_DIR}/stm32f4xx_hal_pcd.c
-    ${HAL_SRC_DIR}/stm32f4xx_hal_pcd_ex.c
-    ${HAL_SRC_DIR}/stm32f4xx_hal_rcc.c
-    ${HAL_SRC_DIR}/stm32f4xx_hal_tim.c
-    ${HAL_SRC_DIR}/stm32f4xx_hal_tim_ex.c
-    ${HAL_SRC_DIR}/stm32f4xx_ll_usb.c
-    ${PROJECT_SOURCE_DIR}/main.cpp
-    ${USBDEVLIB_CDC_SRC_DIR}/usbd_cdc.c
-    ${USBDEVLIB_SRC_DIR}/usbd_core.c
-    ${USBDEVLIB_SRC_DIR}/usbd_ctlreq.c
-    ${USBDEVLIB_SRC_DIR}/usbd_ioreq.c
-    ${USBSHA256_SRC_DIR}/sha256sum.cpp
-    ${USBSHA256_SRC_DIR}/shell.cpp
-)
+add_executable(main ${PROJECT_SOURCE_DIR}/main.cpp)
 set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
-target_link_libraries(main PRIVATE startup wolfssl::wolfssl)
-target_include_directories(main PRIVATE
-    ${BOARD_INC_DIR}
-    ${USBSHA256_INC_DIR}
-    ${CMSIS_INCLUDE_DIRECTORIES}
-    ${HAL_INCLUDE_DIRECTORIES}
-    ${USBDEVLIB_INCLUDE_DIRECTORIES}
+
+target_link_libraries(main PRIVATE
+    -Wl,--whole-archive os -Wl,--no-whole-archive
+    board
+    usb-sha256
+    startup
 )
+
+set(LINKER_SCRIPT ${PROJECT_SOURCE_DIR}/STM32F411CEUX_FLASH.ld)
 target_link_options(main PRIVATE
     -Wl,-T ${LINKER_SCRIPT}
     -Wl,--fatal-warnings
     -Wl,--gc-sections
     -nostartfiles
 )
-target_compile_definitions(main PRIVATE STM32F411xE)
 target_compile_options(main PRIVATE
     -Wall
     -Wextra
     -Wpedantic
     -Werror
-    $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+    -fno-exceptions
     -ffunction-sections
     -fdata-sections
 )
 
 # strip ELF file
-
 find_program(CMAKE_STRIP arm-none-eabi-strip REQUIRED)
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/stripped.elf
@@ -90,7 +46,6 @@ add_custom_command(
 add_custom_target(stripped DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/stripped.elf)
 
 # make firmware file
-
 find_program(CMAKE_OBJCOPY arm-none-eabi-objcopy REQUIRED)
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/main.bin
@@ -100,7 +55,6 @@ add_custom_command(
 add_custom_target(main_bin ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/main.bin)
 
 # flash device
-
 message(CHECK_START "Check whether st-flash is installed")
 find_program(CMAKE_ST_FLASH st-flash)
 if (CMAKE_ST_FLASH-NOTFOUND)

@@ -22,7 +22,6 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-#include "shell.hpp"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -31,7 +30,7 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+usb_receive_callback_t usb_receive_callback = NULL;
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -256,7 +255,9 @@ static int8_t CDC_Receive_FS(uint8_t *Buf, uint32_t *Len) {
     HAL_TIM_Base_Start_IT(&htim2);
     USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
     USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-    shell_receive_callback(Buf, *Len);
+    if (usb_receive_callback) {
+        usb_receive_callback(Buf, *Len);
+    }
     return (USBD_OK);
     /* USER CODE END 6 */
 }
@@ -308,7 +309,9 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum) {
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
-
+void set_usb_receive_callback(usb_receive_callback_t callback) {
+    usb_receive_callback = callback;
+}
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
 /**
