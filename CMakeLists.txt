@@ -15,7 +15,7 @@ set(USBSHA256_DIR ${PROJECT_SOURCE_DIR}/usb-sha256)
 set(USBSHA256_SRC_DIR ${USBSHA256_DIR}/src)
 set(USBSHA256_INC_DIR ${USBSHA256_DIR}/include)
 
-set(LINKER_SCRIPT ${PROJECT_SOURCE_DIR}/linker/STM32F411CEUX_FLASH.ld)
+set(LINKER_SCRIPT ${PROJECT_SOURCE_DIR}/STM32F411CEUX_FLASH.ld)
 
 include(${PROJECT_SOURCE_DIR}/cmake/stm32cubef4.cmake)
 
@@ -45,13 +45,13 @@ add_executable(main
     ${HAL_SRC_DIR}/stm32f4xx_hal_tim.c
     ${HAL_SRC_DIR}/stm32f4xx_hal_tim_ex.c
     ${HAL_SRC_DIR}/stm32f4xx_ll_usb.c
+    ${PROJECT_SOURCE_DIR}/main.cpp
     ${USBDEVLIB_CDC_SRC_DIR}/usbd_cdc.c
     ${USBDEVLIB_SRC_DIR}/usbd_core.c
     ${USBDEVLIB_SRC_DIR}/usbd_ctlreq.c
     ${USBDEVLIB_SRC_DIR}/usbd_ioreq.c
     ${USBSHA256_SRC_DIR}/sha256sum.cpp
     ${USBSHA256_SRC_DIR}/shell.cpp
-    main.cpp
 )
 set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
 target_link_libraries(main PRIVATE startup wolfssl::wolfssl)
