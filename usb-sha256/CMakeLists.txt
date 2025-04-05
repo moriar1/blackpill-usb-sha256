@@ -6,7 +6,7 @@ find_package(wolfssl REQUIRED)
 
 add_library(usb-sha256 STATIC
     "${USBSHA256_SRC_DIR}/sha256sum.cpp"
-    "${USBSHA256_SRC_DIR}/shell.cpp"
+    "${USBSHA256_SRC_DIR}/usb.cpp"
 )
 
 target_include_directories(usb-sha256 PUBLIC "${USBSHA256_INC_DIR}")

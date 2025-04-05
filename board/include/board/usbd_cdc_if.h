@@ -64,7 +64,7 @@ extern "C" {
  */
 
 /* USER CODE BEGIN EXPORTED_TYPES */
-typedef void (*usb_receive_callback_t)(uint8_t *const, const uint32_t);
+typedef void (*usb_receive_callback_t)(const uint8_t *const, const uint32_t);
 /* USER CODE END EXPORTED_TYPES */
 
 /**
