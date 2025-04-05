@@ -13,8 +13,10 @@ add_executable(main ${PROJECT_SOURCE_DIR}/main.cpp)
 set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
 
 target_link_libraries(main PRIVATE
-    -Wl,--whole-archive os -Wl,--no-whole-archive
+    -Wl,--whole-archive
+    os
     board
+    -Wl,--no-whole-archive
     usb-sha256
     startup
 )
