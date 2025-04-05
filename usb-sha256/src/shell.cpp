@@ -11,10 +11,10 @@
 
 #include "board/usbd_cdc_if.h"
 
+#include "fast_buffer.hpp"
 #include "hex_string.hpp"
 #include "sha256sum.hpp"
 #include "shell.hpp"
-#include "fast_buffer.hpp"
 #include "types.hpp"
 #include "usbd_cdc_if.h"
 

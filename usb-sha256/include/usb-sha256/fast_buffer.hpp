@@ -60,7 +60,9 @@ template <std::size_t TMaxSize> std::size_t FastBuffer<TMaxSize>::max_size() { r
 
 template <std::size_t TMaxSize> std::size_t FastBuffer<TMaxSize>::DataSize() const { return _size; }
 
-template <std::size_t TMaxSize> bool FastBuffer<TMaxSize>::Empty() const { return DataSize() == 0u; }
+template <std::size_t TMaxSize> bool FastBuffer<TMaxSize>::Empty() const {
+    return DataSize() == 0u;
+}
 
 template <std::size_t TMaxSize> BytesSpan FastBuffer<TMaxSize>::Data() const {
     return {_data.data(), _size};
