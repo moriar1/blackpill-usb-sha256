@@ -309,7 +309,7 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum) {
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
-void set_usb_receive_callback(usb_receive_callback_t callback) {
+void board_set_usb_receive_callback(usb_receive_callback_t callback) {
     usb_receive_callback = callback;
 }
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */

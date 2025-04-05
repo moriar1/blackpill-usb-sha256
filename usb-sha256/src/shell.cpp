@@ -41,7 +41,7 @@ void transmit(std::string_view text) {
 }
 
 void run() {
-    set_usb_receive_callback(shell_receive_callback);
+    board_set_usb_receive_callback(shell_receive_callback);
     while (true) {
         while (!receive_buffer_guard && !receive_buffer.Empty()) {
         }
