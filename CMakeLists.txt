@@ -26,6 +26,15 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/startup)
 # main ELF file
 
 add_executable(main
+    ${BOARD_SRC_DIR}/main.c
+    ${BOARD_SRC_DIR}/stm32f4xx_hal_msp.c
+    ${BOARD_SRC_DIR}/stm32f4xx_it.c
+    ${BOARD_SRC_DIR}/syscalls.c
+    ${BOARD_SRC_DIR}/sysmem.c
+    ${BOARD_SRC_DIR}/usb_device.c
+    ${BOARD_SRC_DIR}/usbd_cdc_if.c
+    ${BOARD_SRC_DIR}/usbd_conf.c
+    ${BOARD_SRC_DIR}/usbd_desc.c
     ${CMSIS_TEMPLATES_DIR}/system_stm32f4xx.c
     ${HAL_SRC_DIR}/stm32f4xx_hal.c
     ${HAL_SRC_DIR}/stm32f4xx_hal_cortex.c
@@ -36,21 +45,13 @@ add_executable(main
     ${HAL_SRC_DIR}/stm32f4xx_hal_tim.c
     ${HAL_SRC_DIR}/stm32f4xx_hal_tim_ex.c
     ${HAL_SRC_DIR}/stm32f4xx_ll_usb.c
-    ${BOARD_SRC_DIR}/main.c
-    ${USBSHA256_SRC_DIR}/sha256sum.cpp
-    ${USBSHA256_SRC_DIR}/shell.cpp
-    ${BOARD_SRC_DIR}/stm32f4xx_hal_msp.c
-    ${BOARD_SRC_DIR}/stm32f4xx_it.c
-    ${BOARD_SRC_DIR}/syscalls.c
-    ${BOARD_SRC_DIR}/sysmem.c
-    ${BOARD_SRC_DIR}/usbd_cdc_if.c
-    ${BOARD_SRC_DIR}/usbd_conf.c
-    ${BOARD_SRC_DIR}/usbd_desc.c
-    ${BOARD_SRC_DIR}/usb_device.c
     ${USBDEVLIB_CDC_SRC_DIR}/usbd_cdc.c
     ${USBDEVLIB_SRC_DIR}/usbd_core.c
     ${USBDEVLIB_SRC_DIR}/usbd_ctlreq.c
     ${USBDEVLIB_SRC_DIR}/usbd_ioreq.c
+    ${USBSHA256_SRC_DIR}/sha256sum.cpp
+    ${USBSHA256_SRC_DIR}/shell.cpp
+    main.cpp
 )
 set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
 target_link_libraries(main PRIVATE startup wolfssl::wolfssl)

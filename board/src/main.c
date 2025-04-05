@@ -67,7 +67,7 @@ static void MX_TIM2_Init(void);
  * @brief  The application entry point.
  * @retval int
  */
-int main(void) {
+void board_main(void) {
     /* USER CODE BEGIN 1 */
 
     /* USER CODE END 1 */
