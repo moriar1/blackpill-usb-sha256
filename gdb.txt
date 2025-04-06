@@ -1,0 +1,2 @@
+symbol-file main.elf
+target remote localhost:4242
