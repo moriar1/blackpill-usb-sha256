@@ -256,3 +256,47 @@ Local Cache
                   with_rpk: False
 ```
 </details>
+
+### Компиляция `blackpill-usb-sha256`
+
+Теперь можно скомпилировать учебный проект.
+Склонируйте его:
+
+```console
+$ cd ~
+$ cd blackpill-usb-sha256
+$ git clone --recursive https://github.com/czertyaka/blackpill-usb-sha256.git
+$ cd blackpill-usb-sha256
+```
+
+> [!WARNING]
+> Клонирование этого репозитория может занять продолжительное время!
+
+Соберите проект:
+
+```console
+$ conan build . -pr:h cortex-m4
+```
+
+В проекте должна появиться директория `build/Release/`, а в ней &mdash; файлы `main.bin`
+и `main.elf`:
+
+```console
+$ ls -1 build/Release/
+CMakeCache.txt
+CMakeFiles
+Makefile
+board
+cmake_install.cmake
+generators
+main.bin
+main.elf
+metadata
+os
+stripped.elf
+usb-sha256
+$ file build/Release/main.bin
+build/Release/main.bin: data
+$ file build/Release/main.elf
+build/Release/main.elf: ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), statically linked, not stripped
+ ```
