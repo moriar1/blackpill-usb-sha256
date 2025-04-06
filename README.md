@@ -316,3 +316,142 @@ $ sudo apt install stlink-tools
 выводы с помощью перемычек с SWD-интерфейсом контроллера.
 
 ![connect-stlink](docs/connect-debugger.webp)
+
+Для удобства прошивки в CMake была добавлена специальная цель `flash`.
+Чтобы ее выполнить, необходимо активировать виртуальное окружение, которое
+Conan создал для сборки проекта:
+
+```console
+$ cd build/MinSizeRel/
+$ source generators/conanbuild.sh
+```
+
+После активации окружения станут работать команды компиляции и будет доступен
+компилятор:
+
+```console
+$ arm-none-eabi-g++ --version
+arm-none-eabi-g++ (Arm GNU Toolchain 14.2.Rel1 (Build arm-14.52)) 14.2.1 20241119
+Copyright (C) 2024 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+```
+
+Выполните цель `flash`:
+
+```console
+$ make flash
+[  5%] Built target startup
+[ 70%] Built target board
+[ 79%] Built target usb-sha256
+[ 88%] Built target os
+[ 94%] Built target main
+st-flash 1.8.0
+2025-04-06T18:13:13 INFO common.c: STM32F411xC_xE: 128 KiB SRAM, 512 KiB flash in at least 16 KiB pages.
+file main.bin md5 checksum: 7cf27f10551d5be84c441f1839c6f49d, stlink checksum: 0x01ef4133
+2025-04-06T18:13:13 INFO common_flash.c: Attempting to write 299464 (0x491c8) bytes to stm32 address: 134217728 (0x8000000)
+EraseFlash - Sector:0x0 Size:0x4000 -> Flash page at 0x8000000 erased (size: 0x4000)
+EraseFlash - Sector:0x1 Size:0x4000 -> Flash page at 0x8004000 erased (size: 0x4000)
+EraseFlash - Sector:0x2 Size:0x4000 -> Flash page at 0x8008000 erased (size: 0x4000)
+EraseFlash - Sector:0x3 Size:0x4000 -> Flash page at 0x800c000 erased (size: 0x4000)
+EraseFlash - Sector:0x4 Size:0x10000 -> Flash page at 0x8010000 erased (size: 0x10000)
+EraseFlash - Sector:0x5 Size:0x20000 -> Flash page at 0x8020000 erased (size: 0x20000)
+EraseFlash - Sector:0x6 Size:0x20000 -> Flash page at 0x8040000 erased (size: 0x20000)
+
+2025-04-06T18:13:20 INFO flash_loader.c: Starting Flash write for F2/F4/F7/L4
+2025-04-06T18:13:20 INFO flash_loader.c: Successfully loaded flash loader in sram
+2025-04-06T18:13:20 INFO flash_loader.c: Clear DFSR
+2025-04-06T18:13:20 INFO flash_loader.c: enabling 32-bit flash writes
+2025-04-06T18:13:24 INFO common_flash.c: Starting verification of write complete
+2025-04-06T18:13:27 INFO common_flash.c: Flash written and verified! jolly good!
+2025-04-06T18:13:27 INFO common.c: Go to Thumb mode
+[100%] Built target flash
+```
+
+Готово!
+Прошивка попала на контроллер.
+
+## Тестирование прошивки
+
+Теперь можно попробовать что-нибудь отправить на контроллер и посмотреть, какую
+контрольную сумму он посчитает.
+Отсоедините контроллер от программатор и с помощью Type-C соедините с USB-портом
+комьютера.
+
+> [!WARNING]
+> Если не отсоединить контроллер от отладчика и сразу подключить к USB через Type-C,
+> то контроллер может сломаться.
+
+После подключения контроллера по USB на компьютере должно появиться устройство
+с именем `/dev/ttyUSB0` или `/dev/ttyACM0`:
+
+ ```console
+$ ls /dev/ttyACM0
+/dev/ttyACM0
+```
+
+Подключаться к нему будем с помощью picocom.
+Установим его:
+
+ ```console
+$ sudo apt install picocom
+```
+
+Запустим picocom:
+
+```console
+$ picocom --echo /dev/ttyACM0
+picocom v2024-07
+
+port is        : /dev/ttyACM0
+flowcontrol    : none
+baudrate is    : 9600
+parity is      : none
+databits are   : 8
+stopbits are   : 1
+txdelay is     : 0 ns
+escape is      : C-a
+local echo is  : yes
+noinit is      : no
+noreset is     : no
+hangup is      : no
+nolock is      : no
+send_cmd is    : sz -vv
+receive_cmd is : rz -vv -E
+imap is        :
+omap is        :
+emap is        : crcrlf,delbs,
+logfile is     : none
+initstring     : none
+exit_after is  : not set
+exit is        : no
+minimal cmds is: no
+
+Type [C-a] [C-h] to see available commands
+Terminal ready
+```
+
+Посла запуска picocom все печатаемые символы будут отправлены на контроллер и будут
+им обрабатываться.
+Для выхода из picocom нужно нажать последовательность символов Ctrl+a и Ctrl-x.
+
+Наберем `hello` и нажем Enter:
+
+```console
+hello
+957d8a8404a598792d5a7b0ae06bad7e61b14ee26780928b966819b9a4ee784f
+```
+
+Контроллер ответил последовательностью символов
+`957d8a8404a598792d5a7b0ae06bad7e61b14ee26780928b966819b9a4ee784f`,
+которая является хэш-суммой строки `hello`.
+Проверим это:
+
+```console
+$ printf "hello" | sha256sum
+2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824  -
+```
+
+Хэш-сумма, вычисленная на компьютере, совпадает с хэш-суммой, вычисленной
+на контроллере.
+
