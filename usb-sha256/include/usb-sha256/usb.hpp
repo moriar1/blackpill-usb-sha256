@@ -3,16 +3,14 @@
 #include <atomic>
 #include <string_view>
 
-#include "board/usbd_cdc_if.h"
 #include "types.hpp"
-
 #include "fast_buffer.hpp"
 
 namespace usbsha256 {
 
 class Usb {
 public:
-    using Buffer = FastBuffer<APP_RX_DATA_SIZE>;
+    using Buffer = FastBuffer<1024>;
     static Usb &instance();
     // methods for receiving data
     void WaitReceiving();
