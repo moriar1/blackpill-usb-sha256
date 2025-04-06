@@ -275,14 +275,14 @@ $ cd blackpill-usb-sha256
 Соберите проект:
 
 ```console
-$ conan build . -pr:h cortex-m4
+$ conan build . -pr:h cortex-m4 -s build_type=MinSizeRel
 ```
 
-В проекте должна появиться директория `build/Release/`, а в ней &mdash; файлы `main.bin`
+В проекте должна появиться директория `build/MinSizeRel/`, а в ней &mdash; файлы `main.bin`
 и `main.elf`:
 
 ```console
-$ ls -1 build/Release/
+$ ls -1 build/MinSizeRel/
 CMakeCache.txt
 CMakeFiles
 Makefile
@@ -299,4 +299,20 @@ $ file build/Release/main.bin
 build/Release/main.bin: data
 $ file build/Release/main.elf
 build/Release/main.elf: ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), statically linked, not stripped
- ```
+```
+
+## Прошивка контроллера
+
+На прошлом этапе мы получили файл `main.bin`, который и является прошивкой контроллера.
+Он должен быть скопирован с файловой системы компьютера в Flash-память устройства.
+
+Копирование происходит c помощью утилиты `st-flash` из пакета `stlink-tools`, установим его:
+
+```console
+$ sudo apt install stlink-tools
+```
+
+Далее необходимо подключить программатор ST-LINK V2 Clone к компьютеры, соединить его
+выводы с помощью перемычек с SWD-интерфейсом контроллера.
+
+![connect-stlink](docs/connect-debugger.webp)
