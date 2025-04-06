@@ -155,9 +155,9 @@ $ cd conan-center-index/recipes/wolfssl/
 1. Release (умолчательная конфигурация из профиля cortex-m4).
 2. RelWithDebInfo &mdash; сборка с оптимизациями и отладочной информацией.
 3. MinSizeRel &mdash; сборка с минимальным размером библиотеки.
-    Для нас очень важне размер, ведь на контроллере всего 512KiB Flash-памяти!
+    Для нас очень важен размер, ведь на контроллере всего 512KiB Flash-памяти!
 
-Создайте пакет WolfSSL для Cortex-M4:
+Создайте пакеты WolfSSL для Cortex-M4:
 
 ```console
 $ conan create ./all/ -pr:h cortex-m4 --version 5.7.2 --build=missing
@@ -507,7 +507,7 @@ $ arm-none-eabi-gdb --commands=../../gdb.txt
 
 ## Структура проекта
 
-В проекте собирается несколько статичеких библиотек, который затем линкуются
+В проекте собирается несколько статичеких библиотек, которые затем линкуются
 в ELF-файл, из которого, в свою очередь, получается прошивка `main.bin`.
 Разберемся, что это за библиотеки и зачем они нужны.
 
@@ -597,7 +597,7 @@ void board_set_usb_receive_callback(usb_receive_callback_t callback);
 Метод `WaitReceiving` блокирует управление в ожидании приема нового пакета данных
 по USB.
 Получить принятые данные можно с помощью метода `GetBuffer`, а очистить его
-&mfash; с помощью метода `ClearBuffer`.
+&mdash; с помощью метода `ClearBuffer`.
 Размер внутреннего буфера равен 1KiB.
 
 Перегруженные методы `Transmit` нужны для передачи в USB ответных пакетов.
@@ -612,7 +612,7 @@ void board_set_usb_receive_callback(usb_receive_callback_t callback);
     board_main();
 ```
 
-, а затем &mdash; библиотека WolfSSL:
+а затем &mdash; библиотека WolfSSL:
 
 ```c++
     wolfSSL_Init();
