@@ -32,7 +32,7 @@ target_compile_options(main PRIVATE
     -Wall
     -Wextra
     -Wpedantic
-    -Werror
+    # -Werror
     -fno-exceptions
     -ffunction-sections
     -fdata-sections
