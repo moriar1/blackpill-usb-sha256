@@ -9,7 +9,11 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/os)
 add_subdirectory(${PROJECT_SOURCE_DIR}/usb-sha256)
 
 # main ELF file
-add_executable(main ${PROJECT_SOURCE_DIR}/main.cpp)
+add_executable(main
+    ${PROJECT_SOURCE_DIR}/main.cpp
+    ${PROJECT_SOURCE_DIR}/userdb.cpp
+    ${PROJECT_SOURCE_DIR}/userdb.hpp
+)
 set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
 
 target_link_libraries(main PRIVATE
