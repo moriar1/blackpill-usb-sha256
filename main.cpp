@@ -6,16 +6,11 @@
 #include <wolfssl/wolfcrypt/pwdbased.h>
 
 #include "board/main.h"
-#include "board/stm32f4xx_hal_conf.h"
-#include "board/stm32f4xx_it.h"
-#include "usb-sha256/hex_string.hpp"
-#include "usb-sha256/sha256sum.hpp"
-#include "usb-sha256/types.hpp"
 #include "usb-sha256/usb.hpp"
 
-using BytesSpan = std::span<const std::uint8_t>;
+using BytesSpan = std::span<const uint8_t>;
 
-enum class ActionType : std::uint8_t {
+enum class ActionType : uint8_t {
     Auth = 0x00,
     Users,
     ChangePassword,
@@ -25,7 +20,7 @@ enum class ActionType : std::uint8_t {
 
 constexpr uint8_t HASH_LENGTH = 32;
 constexpr uint8_t SAULT_LENGTH = 32;
-constexpr uint8_t LOGIN_LENGTH = 20; // and password
+constexpr uint8_t LOGIN_LENGTH = 20; // login and password
 constexpr uint8_t MAX_USERS = 2;
 
 struct __attribute__((packed, aligned(4))) UserRecord {
@@ -35,7 +30,7 @@ struct __attribute__((packed, aligned(4))) UserRecord {
 
     // TODO: replace with static buffer
     std::string toString() {
-        std::string out("Login: "); // or use stringstream
+        std::string out("Login: ");
         for (auto &n : login) {
             out += n;
         }
@@ -43,13 +38,11 @@ struct __attribute__((packed, aligned(4))) UserRecord {
         for (auto &n : hash) {
             out += std::to_string(n);
             out += ' ';
-            // out += n;
         }
         out += "\r\nSault: ";
         for (auto &n : sault) {
             out += std::to_string(n);
             out += ' ';
-            // out += n;
         }
         out += "\r\n";
 
@@ -114,10 +107,9 @@ public:
     ActionType getActionType() const;
     std::string setAction(BytesSpan);
     bool IsAdminSet();
-    std::array<UserRecord, MAX_USERS> userRecords; // <--
+    std::array<UserRecord, MAX_USERS> userRecords;
 
 private:
-    // var
     ActionType actionType;
     BytesSpan data;
     uint8_t userCount{};
@@ -132,6 +124,7 @@ private:
     uint32_t Read4Bytes();
     std::string ReadDb();
     std::string AddDefaultAdmin();
+    uint8_t FindUser(const BytesSpan) const;
 };
 
 std::string UserDb::AddDefaultAdmin() { return "Ok"; }
@@ -140,6 +133,9 @@ std::string UserDb::ReadDb() { return "Ok"; };
 bool UserDb::IsAdminSet() { return true; }
 
 std::string UserDb::setAction(BytesSpan d) {
+    // TODO:
+    // - data size !=64
+    // - control bytes (21st byte in every arg) != 0
     data = d;
     if (*data.begin() > 0x04) {
         // err
@@ -148,33 +144,31 @@ std::string UserDb::setAction(BytesSpan d) {
     return ("Ok");
 }
 
-std::string UserDb::DelUser(BytesSpan, BytesSpan userLogin) { return std::string("Ok"); }
+std::string UserDb::DelUser(BytesSpan adminPassword, BytesSpan userLogin) {
+    if (userLogin.back() || adminPassword.back()) {
+    }
+    return std::string("Ok");
+}
+
+void generateRandomBlock(uint8_t *buffer, size_t length) {
+    uint32_t seed = HAL_GetUIDw0() ^ HAL_GetUIDw1() ^ HAL_GetUIDw2() ^ HAL_GetTick();
+    for (size_t i = 0; i < length; i++) {
+        buffer[i] = (uint8_t)((seed >> (8 * (i % 4))) & 0xFF);
+        seed = seed * 1664525 + 1013904223;
+    }
+}
 
 std::string UserDb::AddUser(BytesSpan adminPassword, BytesSpan userLogin, BytesSpan userPassword) {
-    // TODO:
-    // - check lengths
-    // - check username availability
-    // - verificate adminPassword
 
-    // Generate sault
-    RNG rng;
+    if (adminPassword.back()) {
+    }
+
     byte userSault[SAULT_LENGTH];
+    generateRandomBlock(userSault, SAULT_LENGTH);
 
-    int ret = wc_InitRng(&rng);
-    if (ret != 0) {
-        return "init of rng failed";
-    }
-
-    ret = wc_RNG_GenerateBlock(&rng, userSault, SAULT_LENGTH);
-    if (ret != 0) {
-        return "generating rng block failed";
-    }
-    wc_FreeRng(&rng);
-
-    // Get hash
     byte userHash[HASH_LENGTH];
-    ret = wc_PBKDF2(userHash, userPassword.data(), userPassword.size(), userSault, SAULT_LENGTH,
-                    2048, HASH_LENGTH, WC_SHA256);
+    int ret = wc_PBKDF2(userHash, userPassword.data(), userPassword.size(), userSault, SAULT_LENGTH,
+                        2048, HASH_LENGTH, WC_SHA256);
     if (ret != 0) {
         return "wc_PBKDF2 failed";
     }
@@ -185,8 +179,8 @@ std::string UserDb::AddUser(BytesSpan adminPassword, BytesSpan userLogin, BytesS
 
     std::copy(userLogin.begin(), userLogin.begin() + LOGIN_LENGTH, login.begin());
 
-    std::copy(std::begin(userHash), std::end(hash), hash.begin());
-    std::copy(std::begin(userSault), std::end(sault), sault.begin());
+    std::copy(std::begin(userHash), std::begin(userHash) + HASH_LENGTH, hash.begin());
+    std::copy(std::begin(userSault), std::begin(userSault) + SAULT_LENGTH, sault.begin());
 
     UserRecord user{login, hash, sault};
     userRecords[userCount++] = std::move(user);
@@ -198,31 +192,67 @@ std::string UserDb::AddUser(BytesSpan adminPassword, BytesSpan userLogin, BytesS
 }
 
 std::string UserDb::ChangePassword(BytesSpan login, BytesSpan oldPassword, BytesSpan newPassword) {
+    if (login.back() || oldPassword.back() || newPassword.back()) {
+    }
     return std::string("Ok");
 }
 
-std::string UserDb::Users() const { return std::string("Ok"); }
+std::string UserDb::Users() const {
+    std::string output{};
+    for (uint8_t i = 0; i < userCount; i++) {
+        for (auto &n : userRecords[i].login) {
+            output += n;
+        }
+    }
+    return output == std::string{} ? "No users found" : output;
+}
+
+uint8_t UserDb::FindUser(const BytesSpan login) const {
+    for (uint8_t idx = 0; idx < userCount; idx++) {
+        // bytewise comparing
+        for (uint8_t j = 0; j < LOGIN_LENGTH; j++) {
+            if (userRecords[idx].login[j] != login[j]) {
+                continue;
+            }
+        }
+        return idx;
+    }
+    return UINT8_MAX;
+}
 
 std::string UserDb::Auth(const BytesSpan login, const BytesSpan password) const {
+    uint8_t idx = FindUser(login);
+    if (idx >= userCount) {
+        return "no user found";
+    }
+    byte userHash[HASH_LENGTH];
+
+    // get hash using password and sault
+    int ret = wc_PBKDF2(userHash, password.data(), password.size(), userRecords[idx].sault.data(),
+                        SAULT_LENGTH, 2048, HASH_LENGTH, WC_SHA256);
+    if (ret != 0) {
+        return "getting hash failed";
+    }
+
+    // compare hashes (strcmp do not works)
+    for (uint8_t i = 0; i < HASH_LENGTH; i++) {
+        if (userHash[i] != userRecords[idx].hash[i]) {
+            return "password is incorrect";
+        }
+    }
     return std::string("Ok");
 }
 
 ActionType UserDb::getActionType() const { return actionType; }
 
 std::string UserDb::doAction() {
+    constexpr size_t ARG_INPUT_SIZE = 21; // in package
+    constexpr size_t ARG_USED_SIZE = 20;  // in using
+    // TODO: check 21st byte == 0x0
 
-    std::array<uint8_t, 64> a{
-        'a', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b',
-        'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b',
-        'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b',
-        'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b', 'c', 'b',
-    };
-    data = BytesSpan(a);
-
-    constexpr size_t sz = 21;                   // TODO: add last zero to check data correctness
-    BytesSpan firstArg = data.subspan(1, 20);   // 1..21 (21st byte is 0)
-    BytesSpan secondArg = data.subspan(22, 20); // 22..42 (42nd byte is 0)
-    BytesSpan thirdArg = data.subspan(43, 20);  // 43..63 (63rd byte is 0)
+    BytesSpan firstArg = data.subspan(1, ARG_USED_SIZE);                      // 1..20
+    BytesSpan secondArg = data.subspan(1 + ARG_INPUT_SIZE, ARG_USED_SIZE);    // 22..41
+    BytesSpan thirdArg = data.subspan(1 + 2 * ARG_INPUT_SIZE, ARG_USED_SIZE); // 43..62
 
     switch (actionType) {
     case ActionType::Auth: // 0x00
@@ -248,7 +278,6 @@ UserDb::UserDb() {
         AddDefaultAdmin();
         isAdminSet = false;
     }
-    actionType = ActionType::AddUser;
 }
 
 uint32_t UserDb::Read4Bytes() { return 0x0; }
@@ -300,18 +329,24 @@ int main() {
         auto data = usb.GetBuffer();
         if (!data.empty() && (data.back() == '\r' || data.back() == '\n')) {
             data = data.first(data.size() - 1);
+
+            // Test. Command = 0x0, 1st argument = `username0`, 2nd = `password1`, 3rd = `myarg2`
+            std::array<uint8_t, 64> a{
+                0x3, 'u', 's', 'e', 'r', 'n', 'a', 'm', 'e', '0', '0', '0', '0', '0', '0', '0',
+                '0', '0', '0', '0', '0', 'z', 'p', 'a', 's', 's', 'w', 'o', 'r', 'd', '1', '1',
+                '1', '1', '1', '1', '1', '1', '1', '1', '1', '1', 'z', 'm', 'y', 'a', 'r', 'g',
+                'u', 'm', 'e', 'n', 't', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', 'z',
+            };
+            data = BytesSpan(a);
             std::string actionMessage =
                 "Action code: " + std::to_string(static_cast<int>(data.front()));
-            // userDb.setAction(std::move(data));
-
-            // For debug
             usb.Transmit(actionMessage);
             usb.Transmit("\r\nArgs: ");
-            usb.Transmit(data.subspan(1, data.size()));
+            usb.Transmit(data.subspan(1, data.size() - 1));
             usb.Transmit("\r\n");
 
             // Execute command
-            usb.Transmit("proceeding...\r\n");
+            userDb.setAction(std::move(data));
             std::string res = userDb.doAction();
             if (res == "Ok") {
                 usb.Transmit(userDb.userRecords[0].toString());
@@ -321,27 +356,6 @@ int main() {
             usb.Transmit(res);
             usb.Transmit("\r\n");
             usb.ClearBuffer();
-
-            /// ADD USER ///
-            // UserRecord user1{};
-            // user1.login = {'a', 'b', 'c'};
-            // user1.hash = {'h', 'a', 's'};
-            // user1.sault = {'s', 's', 's'};
-
-            // if (writeUser(user1) != HAL_OK) {
-            //     usb.Transmit("Flash write error\r\n");
-            //     usb.ClearBuffer();
-            // }
-
-            // user1.login = {};
-            // user1.hash = {};
-            // user1.sault = {};
-
-            // readUser(user1);
-
-            // usb.Transmit(user1.toString());
-            // usb.ClearBuffer();
-            /// ADD USER ///
         }
     }
 }
