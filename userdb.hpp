@@ -6,7 +6,7 @@
 constexpr size_t HASH_LENGTH = 32;
 constexpr size_t SAULT_LENGTH = 32;
 constexpr size_t LOGIN_LENGTH = 20; // login and password length
-constexpr size_t MAX_USERS = 24;
+constexpr size_t MAX_USERS = 10;
 constexpr size_t MAX_MESSAGE_LENGTH = 256; // reserve for `Users` Action (for others 32 is enough)
 constexpr uint32_t USERS_FLASH_ADDRESS = 0x08060000;
 
@@ -48,7 +48,7 @@ private:
     std::array<UserRecord, MAX_USERS> userRecords;
     ActionType actionType;
     BytesSpan data;
-    uint8_t userCount;
+    uint32_t userCount;
     bool isAdminSet;
     // TODO: replace `std::string`s with this buffer
     // std::array<char, MAX_MESSAGE_LENGTH> message_buffer{};
@@ -61,7 +61,7 @@ private:
     std::string DelUser(BytesSpan, BytesSpan);
 
     // INTERNAL FUNCTIONS
-    uint8_t writeUser(UserRecord &);
+    uint8_t writeUser();
     void readUser(UserRecord &);
     std::string ReadDb();
     std::string AddDefaultAdmin();
