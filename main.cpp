@@ -25,19 +25,28 @@ int main() {
                 std::string actionMessage =
                     "Action code: " + std::to_string(static_cast<int>(data.front()));
 
-                userDb.setAction(std::move(data));
+                userDb.setAction(data);
                 usb.Transmit(actionMessage);
+                usb.Transmit("\r\nArgs: ");
+                usb.Transmit(data.subspan(1, data.size() - 1));
                 usb.Transmit("\r\n");
 
                 if (userDb.getActionType() == ActionType::ChangePassword) {
-                    usb.Transmit("Changing password...\r\n");
-                    usb.Transmit(userDb.doAction());
+                    usb.Transmit("Changing admin's password...\r\n");
+                    std::string res = userDb.doAction();
+                    usb.Transmit(res);
                     usb.Transmit("\r\n");
                     usb.ClearBuffer();
-                    // TODO: check if no errors then break
+                    if (res != "Ok") {
+                        // usb.Transmit("Err");
+                        usb.Transmit(res);
+                        usb.Transmit("\r\n");
+                        usb.ClearBuffer();
+                        continue;
+                    }
                     break;
                 } else {
-                    usb.Transmit("You must `changepassword` for `admin` before proceeding\r\n");
+                    usb.Transmit("You must `changepassword` for `admin`\r\n");
                     usb.ClearBuffer();
                 }
             }
@@ -66,7 +75,7 @@ int main() {
             // // };
             // // data = BytesSpan(a);
 
-            // // TEST 1 ADDUSER
+            // TEST 1 ADDUSER
             // std::array<uint8_t, 64> user1 = {
             // 0x03,
             // 'q','w','e','r','t','y',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -83,7 +92,7 @@ int main() {
             // usb.Transmit("\r\n");
 
             // // Execute command
-            // userDb.setAction(std::move(data));
+            // userDb.setAction(data);
             // res = userDb.doAction();
             // usb.Transmit(res);
             // usb.Transmit("\r\n");
@@ -101,7 +110,7 @@ int main() {
             // usb.Transmit("\r\n");
 
             // // Execute command
-            // userDb.setAction(std::move(data));
+            // userDb.setAction(data);
             // res = userDb.doAction();
             // usb.Transmit(res);
             // usb.Transmit("\r\n");
@@ -127,7 +136,13 @@ int main() {
             usb.Transmit("\r\n");
 
             // Execute command
-            userDb.setAction(std::move(data));
+            res = userDb.setAction(data);
+            if (res != "Ok") {
+                usb.Transmit(res);
+                usb.Transmit("\r\n");
+                usb.ClearBuffer();
+                continue;
+            }
             res = userDb.doAction();
             usb.Transmit(res);
             usb.Transmit("\r\n");

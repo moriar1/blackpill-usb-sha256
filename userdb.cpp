@@ -39,11 +39,11 @@ std::string UserDb::setAction(BytesSpan d) {
     // - data size !=64
     // - control bytes (21st byte in every arg) != 0
     data = d;
-    if (*data.begin() > 0x04) {
+    if (data.front() > 0x04) {
         return "Unknown action";
     }
     actionType = static_cast<ActionType>(data.front());
-    return ("Ok");
+    return "Ok";
 }
 
 std::string UserDb::DelUser(BytesSpan adminPassword, BytesSpan userLogin) {
@@ -68,10 +68,11 @@ std::string UserDb::AddUser(BytesSpan adminPassword, BytesSpan userLogin, BytesS
     if (userCount >= MAX_USERS) {
         return "maximum user count is reached";
     }
-    // std::string authResult = Auth(userRecords[0].login.data(), adminPassword);
-    // if (authResult != "Ok") {
-    //     return "admin password incorrect";
-    // }
+    BytesSpan adminLogin{userRecords[0].login.data(), userRecords[0].login.size()};
+    std::string authResult = Auth(adminLogin, adminPassword);
+    if (authResult != "Ok") {
+        return "admin password incorrect";
+    }
 
     // Sault and hash generation
     byte userSault[SAULT_LENGTH];
@@ -87,8 +88,8 @@ std::string UserDb::AddUser(BytesSpan adminPassword, BytesSpan userLogin, BytesS
     std::array<uint8_t, HASH_LENGTH> hash{};
     std::array<uint8_t, SAULT_LENGTH> sault{};
 
+    // TODO: userLogin maybe shorter than LOGIN_LENGTH
     std::copy(userLogin.begin(), userLogin.begin() + LOGIN_LENGTH, login.begin());
-
     std::copy(std::begin(userHash), std::begin(userHash) + HASH_LENGTH, hash.begin());
     std::copy(std::begin(userSault), std::begin(userSault) + SAULT_LENGTH, sault.begin());
 
@@ -103,8 +104,34 @@ std::string UserDb::AddUser(BytesSpan adminPassword, BytesSpan userLogin, BytesS
 }
 
 std::string UserDb::ChangePassword(BytesSpan login, BytesSpan oldPassword, BytesSpan newPassword) {
-    if (login.back() || oldPassword.back() || newPassword.back()) {
+    uint8_t idx = FindUser(login);
+    if (idx >= userCount) {
+        return "User not found";
     }
+    std::string res = Auth(login, oldPassword);
+    if (res != "Ok") {
+        return "Old password is incorrect: " + res;
+    }
+
+    byte newSault[SAULT_LENGTH];
+    generateRandomBlock(newSault, SAULT_LENGTH);
+    byte newHash[HASH_LENGTH];
+    int ret = wc_PBKDF2(newHash, newPassword.data(), newPassword.size(), newSault, SAULT_LENGTH,
+                        2048, HASH_LENGTH, WC_SHA256);
+    if (ret != 0) {
+        return "hash generation failed";
+    }
+    // TODO: userLogin maybe shorter than LOGIN_LENGTH
+    std::copy(std::begin(newHash), std::begin(newHash) + HASH_LENGTH,
+              userRecords[idx].hash.begin());
+    std::copy(std::begin(newSault), std::begin(newSault) + SAULT_LENGTH,
+              userRecords[idx].sault.begin());
+    if (writeUser() != HAL_OK) {
+        return "writing user into flash failed";
+    }
+    // if someone (including admin) changes password then admin is already set (or is setting now)
+    isAdminSet = true;
+
     return std::string("Ok");
 }
 
@@ -150,27 +177,25 @@ uint8_t UserDb::FindUser(const BytesSpan login) const {
 }
 
 std::string UserDb::Auth(const BytesSpan login, const BytesSpan password) const {
-    uint8_t idx = FindUser(login);
+    const uint8_t idx = FindUser(login);
     if (idx >= userCount) {
-        // return "no user found";
-        return "Auth failed";
+        return "no user found";
+        // return "Auth failed";
     }
     byte userHash[HASH_LENGTH];
 
     // Get hash using password and sault
-    int ret = wc_PBKDF2(userHash, password.data(), password.size(), userRecords[idx].sault.data(),
-                        SAULT_LENGTH, 2048, HASH_LENGTH, WC_SHA256);
+    const int ret =
+        wc_PBKDF2(userHash, password.data(), password.size(), userRecords[idx].sault.data(),
+                  SAULT_LENGTH, 2048, HASH_LENGTH, WC_SHA256);
     if (ret != 0) {
-        // return "getting hash failed";
-        return "Auth failed";
+        return "getting hash failed";
+        // return "Auth failed";
     }
 
-    // Compare hashes (strcmp do not works)
-    for (uint8_t i = 0; i < HASH_LENGTH; i++) {
-        if (userHash[i] != userRecords[idx].hash[i]) {
-            // return "password is incorrect";
-            return "Auth failed";
-        }
+    // Compare hashes
+    if (0 != memcmp(userHash, userRecords[idx].hash.data(), HASH_LENGTH)) {
+        return "Auth Failed";
     }
     return "Ok";
 }
@@ -209,7 +234,7 @@ UserDb::UserDb() : userRecords{}, actionType(ActionType::Unknown), data{} {
     // Check if db is not empty
     if (*((__IO uint32_t *)USERS_FLASH_ADDRESS) != 0xffffffff) {
         userCount = 0; // `userCount` reads from flash in ReadDb()
-        std::string dbOutput = ReadDb();
+        const std::string dbOutput = ReadDb();
 
         if (dbOutput != "Ok") {
             // how to show err?
@@ -217,7 +242,7 @@ UserDb::UserDb() : userRecords{}, actionType(ActionType::Unknown), data{} {
             // Erase data and try add Default Admin?
             // AddDefaultAdmin();
         }
-        isAdminSet = true; // TODO: <-- sets in ReadDb
+        isAdminSet = true; // TODO: <-- can sets in ReadDb
     } else {
         std::string res = AddDefaultAdmin();
         isAdminSet = false;
@@ -254,8 +279,8 @@ uint8_t UserDb::writeUser() {
     }
 
     // Write `userRecords`
-    uint32_t flashAddr = USERS_FLASH_ADDRESS + sizeof(uint32_t);
-    uint32_t wordsToWrite = sizeof(UserRecord) / 4;
+    const uint32_t flashAddr = USERS_FLASH_ADDRESS + sizeof(uint32_t);
+    const uint32_t wordsToWrite = sizeof(UserRecord) / 4;
     for (uint32_t userIdx = 0; userIdx < userCount; userIdx++) {
         uint32_t *userPtr = (uint32_t *)&userRecords[userIdx];
         for (uint32_t i = 0; i < wordsToWrite; i++) {
@@ -276,7 +301,37 @@ uint8_t UserDb::writeUser() {
 
 ActionType UserDb::getActionType() const { return actionType; }
 
-std::string UserDb::AddDefaultAdmin() { return "Ok"; }
+std::string UserDb::AddDefaultAdmin() {
+    const std::array<const uint8_t, LOGIN_LENGTH> userLogin = {'a', 'd', 'm', 'i', 'n'};
+    const std::array<const uint8_t, LOGIN_LENGTH> userPassword = {'a', 'd', 'm', 'i', 'n'};
+
+    byte userSault[SAULT_LENGTH];
+    generateRandomBlock(userSault, SAULT_LENGTH);
+    byte userHash[HASH_LENGTH];
+    int ret = wc_PBKDF2(userHash, userPassword.data(), userPassword.size(), userSault, SAULT_LENGTH,
+                        2048, HASH_LENGTH, WC_SHA256);
+    if (ret != 0) {
+        return "wc_PBKDF2 failed";
+    }
+
+    std::array<uint8_t, LOGIN_LENGTH> login{};
+    std::array<uint8_t, HASH_LENGTH> hash{};
+    std::array<uint8_t, SAULT_LENGTH> sault{};
+
+    // TODO: userLogin maybe shorter than LOGIN_LENGTH
+    std::copy(userLogin.begin(), userLogin.begin() + LOGIN_LENGTH, login.begin());
+    std::copy(std::begin(userHash), std::begin(userHash) + HASH_LENGTH, hash.begin());
+    std::copy(std::begin(userSault), std::begin(userSault) + SAULT_LENGTH, sault.begin());
+
+    UserRecord user{login, hash, sault};
+    userRecords[0] = std::move(user);
+    userCount = 1;
+    isAdminSet = false;
+    if (writeUser() != HAL_OK) {
+        return "writing admin into flash failed";
+    }
+    return "Ok";
+}
 
 std::string UserDb::ReadDb() {
     // First 4 bytes are user count
@@ -291,21 +346,28 @@ std::string UserDb::ReadDb() {
                                                     userIdx * sizeof(UserRecord));
 
         __IO uint32_t *userPtr = (__IO uint32_t *)&userRecords[userIdx];
-        uint32_t wordsToRead = sizeof(UserRecord) / 4;
+        const uint32_t wordsToRead = sizeof(UserRecord) / 4;
         for (uint32_t i = 0; i < wordsToRead; i++) {
             userPtr[i] = flashPtr[i];
         }
 
-        // TODO: Check if login if valid
+        // Check if login if valid
+        bool validUser = true;
+        for (uint8_t i = 0; i < LOGIN_LENGTH && userRecords[userIdx].login[i] != 0; i++) {
+            char c = userRecords[userIdx].login[i];
+            if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) {
+                validUser = false;
+                break;
+            }
+        }
+        if (!validUser)
+            return "data is corrupted: found invalid login characters";
     }
-    // isAdminSet = false;
     // TODO: Check if first user is admin
     ///
-    // TODO: check if admin's password is not "admin"
-    // isAdminSet = true;
+    // TODO: Check if admin's password is not "admin" (hope user will not changepassword to 'admin')
     ///
-
     return "Ok";
 }
 
-bool UserDb::IsAdminSet() { return true; }
+bool UserDb::IsAdminSet() { return isAdminSet; }

@@ -69,7 +69,7 @@ else()
     message(CHECK_PASS "found")
     add_custom_target(
         flash
-        # COMMAND ${CMAKE_ST_FLASH} erase 0x08060000 0x20000 # Erase 7th sector (it contatins users database). Use `--connect-under-reset`?
+        COMMAND ${CMAKE_ST_FLASH} erase 0x08060000 0x20000 # Erase 7th sector (it contatins users database). Use `--connect-under-reset`?
         COMMAND ${CMAKE_ST_FLASH} --connect-under-reset write main.bin 0x08000000
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/main.bin
     )
