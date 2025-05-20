@@ -25,7 +25,6 @@ struct __attribute__((packed, aligned(4))) UserRecord {
     std::array<uint8_t, LOGIN_LENGTH> login{};
     std::array<uint8_t, HASH_LENGTH> hash{};
     std::array<uint8_t, SAULT_LENGTH> sault{};
-    std::string toString();
     UserRecord() = default;
     UserRecord(const std::array<uint8_t, LOGIN_LENGTH> &, const std::array<uint8_t, HASH_LENGTH> &h,
                const std::array<uint8_t, SAULT_LENGTH> &);

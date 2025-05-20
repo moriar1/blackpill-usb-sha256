@@ -1,6 +1,7 @@
 #include "board/main.h"
 #include "userdb.hpp"
 #include <cstdint>
+#include <string>
 #include <wolfssl/ssl.h>
 #include <wolfssl/wolfcrypt/pwdbased.h>
 
@@ -9,35 +10,12 @@ UserRecord::UserRecord(const std::array<uint8_t, LOGIN_LENGTH> &l,
                        const std::array<uint8_t, SAULT_LENGTH> &s)
     : login(l), hash(h), sault(s) {}
 
-std::string UserRecord::toString() {
-    // May have zeros
-    std::string out("Login: ");
-    for (auto &n : login) {
-        if (n) {
-            out += n;
-        }
-    }
-    out += "\r\nHash: ";
-    for (auto &n : hash) {
-        out += std::to_string(n) + ' ';
-    }
-    out += "\r\nSault: ";
-    for (auto &n : sault) {
-        out += std::to_string(n) + ' ';
-    }
-    out += "\r\n";
-    return out;
-}
-
 UserDb &UserDb::instance() {
     static UserDb instance;
     return instance;
 }
 
 std::string UserDb::setAction(BytesSpan d) {
-    // TODO:
-    // - data size !=64
-    // - control bytes (21st byte in every arg) != 0
     data = d;
     if (data.front() > 0x04) {
         return "Unknown action";
@@ -47,9 +25,28 @@ std::string UserDb::setAction(BytesSpan d) {
 }
 
 std::string UserDb::DelUser(BytesSpan adminPassword, BytesSpan userLogin) {
-    if (userCount <= 1)
-        return "can't delete admin";
-    return std::string("Ok");
+    uint8_t userIdx = FindUser(userLogin);
+    if (userIdx >= userCount) {
+        return "User not found";
+    }
+    if (userIdx == 0) {
+        return "Can't delete admin";
+    }
+    BytesSpan adminLogin{userRecords[0].login.data(), userRecords[0].login.size()};
+    std::string authResult = Auth(adminLogin, adminPassword);
+    if (authResult != "Ok") {
+        return "admin password incorrect";
+    }
+    // shift users
+    for (uint8_t i = userIdx; i < userCount - 1; i++) {
+        userRecords[i] = std::move(userRecords[i + 1]);
+    }
+    userCount--;
+    if (writeUser() != HAL_OK) {
+        return "writing to flash memory failed";
+    }
+
+    return "Ok";
 }
 
 void UserDb::generateRandomBlock(uint8_t *buffer, size_t length) {
@@ -179,8 +176,8 @@ uint8_t UserDb::FindUser(const BytesSpan login) const {
 std::string UserDb::Auth(const BytesSpan login, const BytesSpan password) const {
     const uint8_t idx = FindUser(login);
     if (idx >= userCount) {
-        return "no user found";
-        // return "Auth failed";
+        // return "no user found"; // helps for debug
+        return "Auth failed";
     }
     byte userHash[HASH_LENGTH];
 
@@ -189,8 +186,8 @@ std::string UserDb::Auth(const BytesSpan login, const BytesSpan password) const 
         wc_PBKDF2(userHash, password.data(), password.size(), userRecords[idx].sault.data(),
                   SAULT_LENGTH, 2048, HASH_LENGTH, WC_SHA256);
     if (ret != 0) {
-        return "getting hash failed";
-        // return "Auth failed";
+        // return "getting hash failed";
+        return "Auth failed";
     }
 
     // Compare hashes
@@ -203,11 +200,11 @@ std::string UserDb::Auth(const BytesSpan login, const BytesSpan password) const 
 std::string UserDb::doAction() {
     constexpr size_t ARG_INPUT_SIZE = 21; // In package
     constexpr size_t ARG_USED_SIZE = 20;  // In using
-    // TODO: Check 21st byte == 0x0
+    // TODO: Check 22st and 43 bytes == 0x0
 
-    // if (data.size() != 1 + 3 * ARG_INPUT_SIZE) {
-    //     return "got invalid data";
-    // }
+    if (data.size() != 3 * ARG_INPUT_SIZE) { // 63 bytes
+        return "got invalid data, data size (without \'\\n\'): " + std::to_string(data.size());
+    }
 
     BytesSpan firstArg = data.subspan(1, ARG_USED_SIZE);                      // 1..20
     BytesSpan secondArg = data.subspan(1 + ARG_INPUT_SIZE, ARG_USED_SIZE);    // 22..41
@@ -242,7 +239,7 @@ UserDb::UserDb() : userRecords{}, actionType(ActionType::Unknown), data{} {
             // Erase data and try add Default Admin?
             // AddDefaultAdmin();
         }
-        isAdminSet = true; // TODO: <-- can sets in ReadDb
+        isAdminSet = true; // TODO: sets in ReadDb
     } else {
         std::string res = AddDefaultAdmin();
         isAdminSet = false;
@@ -363,10 +360,28 @@ std::string UserDb::ReadDb() {
         if (!validUser)
             return "data is corrupted: found invalid login characters";
     }
-    // TODO: Check if first user is admin
-    ///
-    // TODO: Check if admin's password is not "admin" (hope user will not changepassword to 'admin')
-    ///
+    // TODO: Test this checks
+    //
+    // Check if first user is admin
+    isAdminSet = false;
+    std::string adminLogin;
+    for (uint8_t i = 0; i < LOGIN_LENGTH && userRecords[0].login[i] != 0; i++) {
+        adminLogin += static_cast<char>(userRecords[0].login[i]);
+    }
+    if (adminLogin != "admin") {
+        return "data is corrupted: first user is not admin";
+    }
+
+    // Check if admin's password is not "admin" (hope user will not changepassword to 'admin')
+    const std::array<const uint8_t, 5> defPassword = {'a', 'd', 'm', 'i', 'n'};
+    uint8_t defHash[HASH_LENGTH];
+    const int ret =
+        wc_PBKDF2(defHash, defPassword.data(), defPassword.size(), userRecords[0].sault.data(),
+                  SAULT_LENGTH, 2048, HASH_LENGTH, WC_SHA256);
+
+    if (!ret && memcmp(defHash, userRecords[0].hash.data(), HASH_LENGTH)) {
+        isAdminSet = true;
+    }
     return "Ok";
 }
 
