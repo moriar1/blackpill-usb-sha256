@@ -85,7 +85,6 @@ std::string UserDb::AddUser(BytesSpan adminPassword, BytesSpan userLogin, BytesS
     std::array<uint8_t, HASH_LENGTH> hash{};
     std::array<uint8_t, SAULT_LENGTH> sault{};
 
-    // TODO: userLogin maybe shorter than LOGIN_LENGTH
     std::copy(userLogin.begin(), userLogin.begin() + LOGIN_LENGTH, login.begin());
     std::copy(std::begin(userHash), std::begin(userHash) + HASH_LENGTH, hash.begin());
     std::copy(std::begin(userSault), std::begin(userSault) + SAULT_LENGTH, sault.begin());
@@ -118,7 +117,6 @@ std::string UserDb::ChangePassword(BytesSpan login, BytesSpan oldPassword, Bytes
     if (ret != 0) {
         return "hash generation failed";
     }
-    // TODO: userLogin maybe shorter than LOGIN_LENGTH
     std::copy(std::begin(newHash), std::begin(newHash) + HASH_LENGTH,
               userRecords[idx].hash.begin());
     std::copy(std::begin(newSault), std::begin(newSault) + SAULT_LENGTH,
@@ -200,10 +198,16 @@ std::string UserDb::Auth(const BytesSpan login, const BytesSpan password) const 
 std::string UserDb::doAction() {
     constexpr size_t ARG_INPUT_SIZE = 21; // In package
     constexpr size_t ARG_USED_SIZE = 20;  // In using
-    // TODO: Check 22st and 43 bytes == 0x0
 
     if (data.size() != 3 * ARG_INPUT_SIZE) { // 63 bytes
         return "got invalid data, data size (without \'\\n\'): " + std::to_string(data.size());
+    }
+
+    // All `data` bytes are ascii except 0, 21, 42 bytes (and 63 which removes in main)
+    // If arg < ARG_USED_SIZE then empty bytes are 0
+    // Maybe should check if all bytes are ASCII or zeros
+    if (data[21] != 0 || data[42] != 0) {
+        return "control bytes with index [21] and [42] do not have 0 values";
     }
 
     BytesSpan firstArg = data.subspan(1, ARG_USED_SIZE);                      // 1..20
@@ -315,7 +319,6 @@ std::string UserDb::AddDefaultAdmin() {
     std::array<uint8_t, HASH_LENGTH> hash{};
     std::array<uint8_t, SAULT_LENGTH> sault{};
 
-    // TODO: userLogin maybe shorter than LOGIN_LENGTH
     std::copy(userLogin.begin(), userLogin.begin() + LOGIN_LENGTH, login.begin());
     std::copy(std::begin(userHash), std::begin(userHash) + HASH_LENGTH, hash.begin());
     std::copy(std::begin(userSault), std::begin(userSault) + SAULT_LENGTH, sault.begin());
@@ -360,7 +363,7 @@ std::string UserDb::ReadDb() {
         if (!validUser)
             return "data is corrupted: found invalid login characters";
     }
-    // TODO: Test this checks
+    // TODO: Test this checks (now they useless, since `isAdminSet` sets in constructor)
     //
     // Check if first user is admin
     isAdminSet = false;
@@ -369,7 +372,7 @@ std::string UserDb::ReadDb() {
         adminLogin += static_cast<char>(userRecords[0].login[i]);
     }
     if (adminLogin != "admin") {
-        return "data is corrupted: first user is not admin";
+        // return "data is corrupted: first user is not admin";
     }
 
     // Check if admin's password is not "admin" (hope user will not changepassword to 'admin')

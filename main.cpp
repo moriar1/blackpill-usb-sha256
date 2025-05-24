@@ -22,29 +22,31 @@ int main() {
             if (!data.empty() && (data.back() == '\r' || data.back() == '\n')) {
                 data = data.first(data.size() - 1);
 
-                std::string actionMessage =
-                    "Action code: " + std::to_string(static_cast<int>(data.front()));
+                // std::string actionMessage =
+                //     "Action code: " + std::to_string(static_cast<int>(data.front()));
+                // usb.Transmit(actionMessage);
+                // usb.Transmit("\r\nArgs: ");
+                // usb.Transmit(data.subspan(1, data.size() - 1));
+                // usb.Transmit("\r\n");
 
                 userDb.setAction(data);
-                usb.Transmit(actionMessage);
-                usb.Transmit("\r\nArgs: ");
-                usb.Transmit(data.subspan(1, data.size() - 1));
-                usb.Transmit("\r\n");
-
                 if (userDb.getActionType() == ActionType::ChangePassword) {
                     usb.Transmit("Changing admin's password...\r\n");
                     std::string res = userDb.doAction();
-                    usb.Transmit(res);
-                    usb.Transmit("\r\n");
-                    usb.ClearBuffer();
-                    if (res != "Ok") {
+                    // usb.Transmit(res);
+                    // usb.Transmit("\r\n");
+                    // usb.ClearBuffer();
+                    if (res == "Ok") {
+                        usb.Transmit("Password changed.");
+                        usb.ClearBuffer();
+                        break;
+                    } else {
                         // usb.Transmit("Err");
                         usb.Transmit(res);
                         usb.Transmit("\r\n");
                         usb.ClearBuffer();
                         continue;
                     }
-                    break;
                 } else {
                     usb.Transmit("You must `changepassword` for `admin`\r\n");
                     usb.ClearBuffer();
@@ -62,11 +64,11 @@ int main() {
         if (!data.empty() && (data.back() == '\r' || data.back() == '\n')) {
             data = data.first(data.size() - 1);
 
-            actionMessage = "Action code: " + std::to_string(static_cast<int>(data.front()));
-            usb.Transmit(actionMessage);
-            usb.Transmit("\r\nArgs: ");
-            usb.Transmit(data.subspan(1, data.size() - 1));
-            usb.Transmit("\r\n");
+            // actionMessage = "Action code: " + std::to_string(static_cast<int>(data.front()));
+            // usb.Transmit(actionMessage);
+            // usb.Transmit("\r\nArgs: ");
+            // usb.Transmit(data.subspan(1, data.size() - 1));
+            // usb.Transmit("\r\n");
 
             // Execute command
             res = userDb.setAction(data);
