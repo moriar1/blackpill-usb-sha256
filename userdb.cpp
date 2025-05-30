@@ -174,7 +174,6 @@ uint8_t UserDb::FindUser(const BytesSpan login) const {
 std::string UserDb::Auth(const BytesSpan login, const BytesSpan password) const {
     const uint8_t idx = FindUser(login);
     if (idx >= userCount) {
-        // return "no user found"; // helps for debug
         return "Auth failed";
     }
     byte userHash[HASH_LENGTH];
@@ -184,7 +183,6 @@ std::string UserDb::Auth(const BytesSpan login, const BytesSpan password) const 
         wc_PBKDF2(userHash, password.data(), password.size(), userRecords[idx].sault.data(),
                   SAULT_LENGTH, 2048, HASH_LENGTH, WC_SHA256);
     if (ret != 0) {
-        // return "getting hash failed";
         return "Auth failed";
     }
 
@@ -238,10 +236,8 @@ UserDb::UserDb() : userRecords{}, actionType(ActionType::Unknown), data{} {
         const std::string dbOutput = ReadDb();
 
         if (dbOutput != "Ok") {
-            // how to show err?
             userCount = 0;
-            // Erase data and try add Default Admin?
-            // AddDefaultAdmin();
+            // Still no hadling errors
         }
         isAdminSet = true; // TODO: sets in ReadDb
     } else {
