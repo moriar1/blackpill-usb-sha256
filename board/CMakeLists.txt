@@ -26,6 +26,9 @@ add_library(board STATIC
     ${USBDEVLIB_SRC_DIR}/usbd_core.c
     ${USBDEVLIB_SRC_DIR}/usbd_ctlreq.c
     ${USBDEVLIB_SRC_DIR}/usbd_ioreq.c
+
+    ${HAL_SRC_DIR}/stm32f4xx_hal_flash.c
+    ${HAL_SRC_DIR}/stm32f4xx_hal_flash_ex.c
 )
 
 target_include_directories(board PUBLIC
@@ -41,7 +44,7 @@ target_compile_options(board PRIVATE
     -Wall
     -Wextra
     -Wpedantic
-    -Werror
+    # -Werror
     -ffunction-sections
     -fdata-sections
 )

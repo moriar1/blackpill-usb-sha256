@@ -9,7 +9,11 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/os)
 add_subdirectory(${PROJECT_SOURCE_DIR}/usb-sha256)
 
 # main ELF file
-add_executable(main ${PROJECT_SOURCE_DIR}/main.cpp)
+add_executable(main
+    ${PROJECT_SOURCE_DIR}/main.cpp
+    ${PROJECT_SOURCE_DIR}/userdb.cpp
+    ${PROJECT_SOURCE_DIR}/userdb.hpp
+)
 set_target_properties(main PROPERTIES OUTPUT_NAME main.elf)
 
 target_link_libraries(main PRIVATE
@@ -65,6 +69,7 @@ else()
     message(CHECK_PASS "found")
     add_custom_target(
         flash
+        COMMAND ${CMAKE_ST_FLASH} erase 0x08060000 0x20000 # Erase 7th sector (it contatins users database).
         COMMAND ${CMAKE_ST_FLASH} --connect-under-reset write main.bin 0x08000000
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/main.bin
     )
